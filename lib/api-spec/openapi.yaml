@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CV Builder API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: cvs
+    description: CV management
+  - name: templates
+    description: CV templates
+  - name: payments
+    description: Payment operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,223 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /cvs:
+    post:
+      operationId: createCv
+      tags: [cvs]
+      summary: Create a new CV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CvInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "400":
+          description: Bad request
+
+  /cvs/{id}:
+    get:
+      operationId: getCv
+      tags: [cvs]
+      summary: Get a CV by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCv
+      tags: [cvs]
+      summary: Update a CV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CvUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCv
+      tags: [cvs]
+      summary: Delete a CV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /cvs/{id}/photo:
+    post:
+      operationId: uploadCvPhoto
+      tags: [cvs]
+      summary: Upload profile photo for a CV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoUpload"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoUploadResult"
+        "404":
+          description: Not found
+
+  /templates:
+    get:
+      operationId: listTemplates
+      tags: [templates]
+      summary: List all available CV templates
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Template"
+
+  /payments:
+    post:
+      operationId: createPayment
+      tags: [payments]
+      summary: Create a payment for CV download
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "400":
+          description: Bad request
+
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      tags: [payments]
+      summary: Get payment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          description: Not found
+
+  /payments/{id}/confirm:
+    post:
+      operationId: confirmPayment
+      tags: [payments]
+      summary: Confirm a payment (simulate payment success)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          description: Not found
+
+  /cvs/{id}/download-token:
+    post:
+      operationId: getCvDownloadToken
+      tags: [cvs]
+      summary: Get a signed download token for a paid CV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DownloadTokenRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadToken"
+        "402":
+          description: Payment required
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +257,395 @@ components:
       required:
         - status
 
+    PersonalInfo:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        profession:
+          type: string
+        phone:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        linkedin:
+          type: ["string", "null"]
+        portfolio:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        summary:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+      required:
+        - firstName
+        - lastName
+        - profession
+
+    Experience:
+      type: object
+      properties:
+        id:
+          type: string
+        company:
+          type: string
+        position:
+          type: string
+        city:
+          type: ["string", "null"]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        current:
+          type: boolean
+        description:
+          type: ["string", "null"]
+      required:
+        - id
+        - company
+        - position
+        - startDate
+        - current
+
+    Education:
+      type: object
+      properties:
+        id:
+          type: string
+        school:
+          type: string
+        degree:
+          type: string
+        field:
+          type: ["string", "null"]
+        year:
+          type: string
+        description:
+          type: ["string", "null"]
+      required:
+        - id
+        - school
+        - degree
+        - year
+
+    Skill:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        category:
+          type: string
+          enum: [technical, computer, language, soft]
+      required:
+        - id
+        - name
+        - level
+        - category
+
+    Language:
+      type: object
+      properties:
+        id:
+          type: string
+        language:
+          type: string
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced, fluent, native]
+      required:
+        - id
+        - language
+        - level
+
+    Certification:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        organization:
+          type: string
+        year:
+          type: string
+      required:
+        - id
+        - title
+        - organization
+        - year
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        technologies:
+          type: ["string", "null"]
+        link:
+          type: ["string", "null"]
+      required:
+        - id
+        - title
+
+    Interest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    CvCustomization:
+      type: object
+      properties:
+        templateId:
+          type: string
+        primaryColor:
+          type: string
+        fontFamily:
+          type: string
+        fontSize:
+          type: string
+          enum: [small, medium, large]
+        photoStyle:
+          type: string
+          enum: [circle, square, none]
+      required:
+        - templateId
+        - primaryColor
+        - fontFamily
+        - fontSize
+        - photoStyle
+
+    Cv:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionToken:
+          type: string
+        personalInfo:
+          $ref: "#/components/schemas/PersonalInfo"
+        experiences:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experience"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/Education"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/Skill"
+        languages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Language"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Certification"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        interests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Interest"
+        customization:
+          $ref: "#/components/schemas/CvCustomization"
+        isPaid:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - sessionToken
+        - personalInfo
+        - experiences
+        - education
+        - skills
+        - languages
+        - certifications
+        - projects
+        - interests
+        - customization
+        - isPaid
+        - createdAt
+        - updatedAt
+
+    CvInput:
+      type: object
+      properties:
+        personalInfo:
+          $ref: "#/components/schemas/PersonalInfo"
+        customization:
+          $ref: "#/components/schemas/CvCustomization"
+      required:
+        - personalInfo
+        - customization
+
+    CvUpdate:
+      type: object
+      properties:
+        personalInfo:
+          $ref: "#/components/schemas/PersonalInfo"
+        experiences:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experience"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/Education"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/Skill"
+        languages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Language"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Certification"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        interests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Interest"
+        customization:
+          $ref: "#/components/schemas/CvCustomization"
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [modern, creative, classic, executive]
+        previewColor:
+          type: string
+      required:
+        - id
+        - name
+        - description
+        - category
+        - previewColor
+
+    PhotoUpload:
+      type: object
+      properties:
+        imageData:
+          type: string
+          description: Base64-encoded image data
+        mimeType:
+          type: string
+      required:
+        - imageData
+        - mimeType
+
+    PhotoUploadResult:
+      type: object
+      properties:
+        photoUrl:
+          type: string
+      required:
+        - photoUrl
+
+    PaymentInput:
+      type: object
+      properties:
+        cvId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          type: string
+          enum: [card, mobile_money, wave, paypal]
+      required:
+        - cvId
+        - amount
+        - currency
+        - method
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        cvId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        createdAt:
+          type: string
+      required:
+        - id
+        - cvId
+        - amount
+        - currency
+        - method
+        - status
+        - createdAt
+
+    DownloadTokenRequest:
+      type: object
+      properties:
+        paymentId:
+          type: string
+      required:
+        - paymentId
+
+    DownloadToken:
+      type: object
+      properties:
+        token:
+          type: string
+        downloadUrl:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - token
+        - downloadUrl
+        - expiresAt

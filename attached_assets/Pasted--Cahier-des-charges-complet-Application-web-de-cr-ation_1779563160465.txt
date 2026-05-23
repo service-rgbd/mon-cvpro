@@ -1,0 +1,718 @@
+# Cahier des charges complet
+
+# Application web de création de CV professionnel en ligne
+
+---
+
+# 1. Présentation générale du projet
+
+## Nom du projet
+
+Application de génération de CV professionnel en ligne.
+
+## Concept
+
+Créer une application web moderne, simple, rapide et professionnelle permettant à un utilisateur de :
+
+* créer un CV complet directement en ligne ;
+* voir un aperçu en temps réel ;
+* personnaliser son CV ;
+* ajouter une photo de profil ;
+* générer automatiquement une mise en page professionnelle ;
+* télécharger le CV uniquement après paiement.
+
+L’application doit être pensée comme une plateforme premium et intuitive capable de produire des CV modernes, élégants et adaptés aux standards internationaux.
+
+---
+
+# 2. Objectifs du projet
+
+## Objectifs principaux
+
+* Permettre la création facile de CV.
+* Offrir un aperçu dynamique en temps réel.
+* Générer automatiquement des CV professionnels.
+* Permettre le téléchargement PDF.
+* Intégrer un système de paiement sécurisé.
+* Créer une expérience utilisateur fluide et moderne.
+* Permettre une utilisation mobile et desktop.
+
+---
+
+# 3. Public cible
+
+## Utilisateurs ciblés
+
+* étudiants ;
+* jeunes diplômés ;
+* chercheurs d’emploi ;
+* freelances ;
+* professionnels ;
+* cadres ;
+* utilisateurs internationaux.
+
+---
+
+# 4. Positionnement visuel
+
+## Style général
+
+Le design doit être :
+
+* moderne ;
+* élégant ;
+* professionnel ;
+* minimaliste ;
+* premium ;
+* très fluide.
+
+## Inspirations visuelles
+
+Le style doit s’inspirer :
+
+* des plateformes SaaS modernes ;
+* des générateurs de CV premium ;
+* des interfaces Apple ;
+* des outils modernes de productivité.
+
+---
+
+# 5. Architecture générale de l’application
+
+L’application sera organisée en deux zones principales.
+
+## Zone gauche
+
+Formulaire de création du CV.
+
+## Zone droite
+
+Aperçu dynamique en temps réel du CV.
+
+Chaque modification effectuée dans le formulaire doit automatiquement être reflétée dans l’aperçu.
+
+---
+
+# 6. Expérience utilisateur souhaitée
+
+## L’utilisateur doit pouvoir
+
+1. Accéder à l’application.
+2. Remplir ses informations.
+3. Ajouter sa photo.
+4. Voir immédiatement le rendu du CV.
+5. Modifier les sections.
+6. Choisir un modèle.
+7. Prévisualiser le résultat final.
+8. Payer.
+9. Télécharger son CV en PDF.
+
+---
+
+# 7. Structure détaillée du CV
+
+# HEADER DU CV
+
+## Photo de profil
+
+### Position
+
+La photo doit apparaître :
+
+* à gauche ou à droite selon le modèle ;
+* parfaitement alignée ;
+* avec un rendu professionnel.
+
+### Fonctionnalités
+
+* upload image ;
+* recadrage automatique ;
+* aperçu instantané ;
+* optimisation image.
+
+---
+
+## Informations personnelles
+
+### Champs obligatoires
+
+* prénom ;
+* nom ;
+* profession ;
+* téléphone ;
+* email ;
+* adresse ;
+* LinkedIn ;
+* portfolio ;
+* site web.
+
+### Affichage
+
+Ces informations doivent être stylisées de manière professionnelle.
+
+---
+
+## Description personnelle
+
+### Position
+
+La description doit apparaître dans le haut du CV.
+
+### Contenu
+
+Zone de texte permettant à l’utilisateur d’écrire :
+
+* présentation ;
+* objectifs ;
+* compétences ;
+* personnalité.
+
+### Aperçu dynamique
+
+Le texte doit apparaître immédiatement dans l’aperçu.
+
+---
+
+# BODY DU CV
+
+## Expériences professionnelles
+
+### Fonctionnalités
+
+L’utilisateur doit pouvoir :
+
+* ajouter plusieurs expériences ;
+* modifier ;
+* supprimer ;
+* réorganiser.
+
+### Champs
+
+* entreprise ;
+* poste ;
+* ville ;
+* date début ;
+* date fin ;
+* description.
+
+### Affichage
+
+Les expériences doivent être présentées sous forme professionnelle.
+
+---
+
+## Formation
+
+### Champs
+
+* école ;
+* diplôme ;
+* spécialité ;
+* année ;
+* description.
+
+---
+
+## Compétences
+
+### Types
+
+* techniques ;
+* informatiques ;
+* linguistiques ;
+* relationnelles.
+
+### Affichage
+
+* barres de progression ;
+* badges ;
+* niveaux.
+
+---
+
+## Langues
+
+### Champs
+
+* langue ;
+* niveau.
+
+---
+
+## Certifications
+
+### Champs
+
+* titre ;
+* organisme ;
+* année.
+
+---
+
+## Projets
+
+### Champs
+
+* titre ;
+* description ;
+* technologies ;
+* lien.
+
+---
+
+## Centres d’intérêt
+
+### Affichage
+
+Icônes modernes et présentation élégante.
+
+---
+
+# FOOTER DU CV
+
+## Informations complémentaires
+
+* références ;
+* disponibilité ;
+* mobilité ;
+* réseaux sociaux.
+
+## Design
+
+Le footer doit être professionnel, équilibré et harmonieux.
+
+---
+
+# 8. Aperçu dynamique en temps réel
+
+## Fonctionnement
+
+Chaque champ rempli doit automatiquement :
+
+* apparaître dans l’aperçu ;
+* mettre à jour le design ;
+* conserver une mise en page propre.
+
+## Objectif
+
+Créer une expérience fluide et interactive.
+
+---
+
+# 9. Génération automatique du CV
+
+## Système intelligent
+
+L’application doit automatiquement :
+
+* organiser les sections ;
+* ajuster les espacements ;
+* équilibrer les colonnes ;
+* optimiser la lisibilité ;
+* harmoniser les couleurs.
+
+## Mise en page professionnelle
+
+Le CV généré doit inclure :
+
+* header ;
+* body ;
+* footer ;
+* typographie moderne ;
+* hiérarchie visuelle ;
+* design premium.
+
+---
+
+# 10. Modèles de CV
+
+## Fonctionnalité
+
+L’utilisateur doit pouvoir choisir plusieurs templates.
+
+## Types de modèles
+
+### Modèle moderne
+
+* minimaliste ;
+* élégant ;
+* corporate.
+
+### Modèle créatif
+
+* plus graphique ;
+* design moderne.
+
+### Modèle professionnel classique
+
+* sobre ;
+* institutionnel.
+
+### Modèle premium exécutif
+
+* haut de gamme ;
+* luxueux.
+
+---
+
+# 11. Personnalisation
+
+## L’utilisateur doit pouvoir modifier
+
+* couleurs ;
+* police ;
+* taille texte ;
+* disposition ;
+* style photo ;
+* icônes.
+
+---
+
+# 12. Génération PDF
+
+## Fonctionnalités
+
+Le système doit permettre :
+
+* génération haute qualité ;
+* export PDF ;
+* optimisation impression ;
+* téléchargement instantané.
+
+## Qualité PDF
+
+Le PDF doit être :
+
+* net ;
+* professionnel ;
+* optimisé ;
+* parfaitement mis en page.
+
+---
+
+# 13. Système de paiement
+
+# OBJECTIF
+
+Le téléchargement final doit être bloqué tant que l’utilisateur n’a pas payé.
+
+---
+
+## Modes de paiement
+
+### Wave
+
+Intégration du paiement Wave.
+
+### Autres paiements
+
+* carte bancaire ;
+* mobile money ;
+* PayPal ;
+* Stripe.
+
+---
+
+# 14. Processus de paiement
+
+## Étapes
+
+1. L’utilisateur clique sur “Télécharger mon CV”.
+2. Une fenêtre de paiement apparaît.
+3. L’utilisateur choisit son mode de paiement.
+4. Le paiement est validé.
+5. Le système débloque automatiquement le téléchargement.
+6. Le PDF devient téléchargeable.
+
+---
+
+# 15. Sécurité des paiements
+
+## Exigences
+
+* HTTPS ;
+* sécurisation API ;
+* validation paiement ;
+* protection fraude ;
+* confirmation automatique.
+
+---
+
+# 16. Pages de l’application
+
+# PAGE 1 — Accueil
+
+## Contenu
+
+* présentation application ;
+* démonstration ;
+* avantages ;
+* modèles de CV ;
+* bouton commencer.
+
+---
+
+# PAGE 2 — Créateur de CV
+
+## Structure principale
+
+### Colonne gauche
+
+Formulaire.
+
+### Colonne droite
+
+Aperçu temps réel.
+
+---
+
+# PAGE 3 — Choix du template
+
+## Contenu
+
+* galerie modèles ;
+* aperçu ;
+* sélection.
+
+---
+
+# PAGE 4 — Paiement
+
+## Contenu
+
+* résumé ;
+* montant ;
+* moyens de paiement ;
+* validation.
+
+---
+
+# PAGE 5 — Téléchargement
+
+## Contenu
+
+* bouton téléchargement ;
+* confirmation paiement ;
+* accès PDF.
+
+---
+
+# PAGE 6 — Contact
+
+## Contenu
+
+* formulaire ;
+* assistance ;
+* FAQ.
+
+---
+
+# 17. Fonctionnalités premium recommandées
+
+## Intelligence artificielle
+
+### Suggestions automatiques
+
+L’IA peut proposer :
+
+* descriptions professionnelles ;
+* compétences ;
+* reformulations.
+
+---
+
+## Correction automatique
+
+* orthographe ;
+* grammaire ;
+* style.
+
+---
+
+## Traduction CV
+
+Possibilité de générer :
+
+* CV français ;
+* CV anglais ;
+* CV multilingue.
+
+---
+
+## Sauvegarde utilisateur
+
+* sauvegarde cloud ;
+* reprise automatique.
+
+---
+
+# 18. Responsive design
+
+## Compatibilité
+
+L’application doit fonctionner parfaitement sur :
+
+* mobile ;
+* tablette ;
+* desktop.
+
+---
+
+# 19. Design UX/UI
+
+## Principes UX
+
+* simplicité ;
+* rapidité ;
+* fluidité ;
+* modernité.
+
+## Effets visuels
+
+* animations fluides ;
+* transitions ;
+* hover effects ;
+* cartes modernes.
+
+---
+
+# 20. Technologies recommandées
+
+## Front-end
+
+* React ;
+* Next.js ;
+* Tailwind CSS.
+
+## Back-end
+
+* Node.js ;
+* Express ;
+* Laravel.
+
+## Base de données
+
+* PostgreSQL ;
+* MongoDB.
+
+## PDF
+
+* Puppeteer ;
+* jsPDF.
+
+## Paiement
+
+* API Wave ;
+* Stripe ;
+* PayPal.
+
+---
+
+# 21. SEO et marketing
+
+## SEO
+
+Optimisation sur :
+
+* créateur CV ;
+* CV professionnel ;
+* CV en ligne ;
+* générateur CV.
+
+## Marketing
+
+* landing pages ;
+* démonstration ;
+* témoignages.
+
+---
+
+# 22. Sécurité
+
+## Exigences
+
+* protection données ;
+* sécurité uploads ;
+* sauvegardes ;
+* anti-spam ;
+* conformité RGPD.
+
+---
+
+# 23. Back-office administrateur
+
+## Fonctionnalités admin
+
+* gestion utilisateurs ;
+* gestion paiements ;
+* statistiques ;
+* gestion templates ;
+* gestion téléchargements ;
+* support client.
+
+---
+
+# 24. Performance
+
+## Exigences techniques
+
+* chargement rapide ;
+* optimisation images ;
+* cache ;
+* performance mobile.
+
+---
+
+# 25. Parcours utilisateur idéal
+
+## Exemple
+
+1. Entrée sur le site.
+2. Découverte des modèles.
+3. Création du CV.
+4. Upload photo.
+5. Personnalisation.
+6. Aperçu temps réel.
+7. Génération PDF.
+8. Paiement.
+9. Téléchargement.
+
+---
+
+# 26. Livrables attendus
+
+## Livrables
+
+* design UX/UI ;
+* développement front-end ;
+* développement back-end ;
+* intégration paiement ;
+* génération PDF ;
+* responsive mobile ;
+* sécurisation ;
+* tests ;
+* mise en ligne.
+
+---
+
+# 27. Qualité attendue
+
+Le résultat final doit être :
+
+* ultra moderne ;
+* rapide ;
+* fluide ;
+* professionnel ;
+* élégant ;
+* intuitif ;
+* sécurisé.
+
+Le CV final généré doit donner une impression premium comparable aux meilleurs générateurs de CV internationaux.
+
+---
+
+# 28. Conclusion
+
+L’objectif est de créer une application web professionnelle de génération de CV capable d’offrir une expérience utilisateur haut de gamme.
+
+La plateforme doit permettre à n’importe quel utilisateur de créer facilement un CV moderne, élégant et professionnel grâce à un système intelligent d’aperçu dynamique, de personnalisation avancée et de téléchargement sécurisé après paiement.
