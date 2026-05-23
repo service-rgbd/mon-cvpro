@@ -82,7 +82,7 @@ export default function Templates() {
 
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <h1 className="text-4xl font-bold tracking-tight mb-3">
             Choisissez votre template
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">

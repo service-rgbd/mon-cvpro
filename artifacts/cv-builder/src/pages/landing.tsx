@@ -83,7 +83,7 @@ export default function Landing() {
               <Star className="w-3 h-3 fill-primary" />
               Générateur de CV professionnel
             </div>
-            <h1 className="text-5xl font-bold leading-tight tracking-tight mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-5xl font-bold leading-tight tracking-tight mb-6">
               Votre CV de{" "}
               <span className="text-primary">carrière</span>{" "}
               en quelques minutes
@@ -141,7 +141,7 @@ export default function Landing() {
       <section className="border-t">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Tout ce dont vous avez besoin</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-3">Tout ce dont vous avez besoin</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">Une plateforme complète pour créer le CV qui fera la différence.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -162,7 +162,7 @@ export default function Landing() {
       <section className="bg-muted/30 border-t border-b">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Templates conçus pour impressionner</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-3">Templates conçus pour impressionner</h2>
             <p className="text-muted-foreground">Chaque template est optimisé pour les recruteurs et les ATS modernes.</p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -191,7 +191,7 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold tracking-tight mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+        <h2 className="text-3xl font-bold tracking-tight mb-4">
           Prêt à créer votre CV ?
         </h2>
         <p className="text-muted-foreground mb-8 max-w-md mx-auto">Rejoignez des milliers de professionnels qui ont déjà utilisé CVPro pour décrocher leur poste.</p>

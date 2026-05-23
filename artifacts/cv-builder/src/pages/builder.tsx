@@ -17,7 +17,6 @@ import CvPreview from "@/components/cv-preview";
 import {
   useCreateCv,
   useUpdateCv,
-  useUploadCvPhoto,
 } from "@workspace/api-client-react";
 import { CvData, defaultCvData, Experience, Education, Skill, Language, Certification, Project, Interest } from "@/types/cv";
 import { useToast } from "@/hooks/use-toast";
@@ -53,8 +52,13 @@ export default function Builder() {
   const [cv, setCv] = useState<CvData>(() => {
     // Try to restore from localStorage
     const savedTemplate = localStorage.getItem("cv_selected_template");
+    const savedPhoto = localStorage.getItem("cv_photo");
     return {
       ...defaultCvData,
+      personalInfo: {
+        ...defaultCvData.personalInfo,
+        photoUrl: savedPhoto || null,
+      },
       customization: {
         ...defaultCvData.customization,
         templateId: savedTemplate || "modern",
@@ -70,7 +74,6 @@ export default function Builder() {
 
   const createCv = useCreateCv();
   const updateCv = useUpdateCv();
-  const uploadPhoto = useUploadCvPhoto();
 
   // Initialize CV on first load
   useEffect(() => {
@@ -102,7 +105,7 @@ export default function Builder() {
         {
           id,
           data: {
-            personalInfo: newCv.personalInfo,
+            personalInfo: { ...newCv.personalInfo, photoUrl: undefined },
             experiences: newCv.experiences,
             education: newCv.education,
             skills: newCv.skills,
@@ -140,21 +143,12 @@ export default function Builder() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const base64 = (reader.result as string).split(",")[1];
-      const mimeType = file.type;
-      const id = cvId || localStorage.getItem("cv_id");
-      if (!id) return;
-      uploadPhoto.mutate(
-        { id, data: { imageData: base64, mimeType } },
-        {
-          onSuccess: (data: any) => {
-            updateCvState((prev) => ({
-              ...prev,
-              personalInfo: { ...prev.personalInfo, photoUrl: data.photoUrl },
-            }));
-          },
-        }
-      );
+      const dataUrl = reader.result as string;
+      localStorage.setItem("cv_photo", dataUrl);
+      updateCvState((prev) => ({
+        ...prev,
+        personalInfo: { ...prev.personalInfo, photoUrl: dataUrl },
+      }));
     };
     reader.readAsDataURL(file);
   };
@@ -223,7 +217,7 @@ export default function Builder() {
           {/* Form content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {activeSection === "personal" && (
-              <PersonalSection cv={cv} onChange={updatePersonalInfo} onPhotoUpload={handlePhotoUpload} uploadLoading={uploadPhoto.isPending} />
+              <PersonalSection cv={cv} onChange={updatePersonalInfo} onPhotoUpload={handlePhotoUpload} />
             )}
             {activeSection === "summary" && (
               <SummarySection cv={cv} onChange={(val) => updatePersonalInfo("summary", val)} />
@@ -290,13 +284,13 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function PersonalSection({ cv, onChange, onPhotoUpload, uploadLoading }: {
+function PersonalSection({ cv, onChange, onPhotoUpload }: {
   cv: CvData;
   onChange: (field: string, value: string) => void;
   onPhotoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  uploadLoading: boolean;
 }) {
   const pi = cv.personalInfo;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <div>
       <SectionHeader title="Informations personnelles" />
@@ -310,15 +304,18 @@ function PersonalSection({ cv, onChange, onPhotoUpload, uploadLoading }: {
           )}
         </div>
         <div className="flex-1">
-          <label className="cursor-pointer">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-2 pointer-events-none" disabled={uploadLoading} data-testid="button-upload-photo">
-                {uploadLoading ? <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3 h-3" />}
-                {pi.photoUrl ? "Changer la photo" : "Ajouter une photo"}
-              </Button>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={onPhotoUpload} data-testid="input-photo" />
-          </label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            data-testid="button-upload-photo"
+          >
+            <Upload className="w-3 h-3" />
+            {pi.photoUrl ? "Changer la photo" : "Ajouter une photo"}
+          </Button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onPhotoUpload} data-testid="input-photo" />
           <p className="text-xs text-muted-foreground mt-1">JPG, PNG, max 5 Mo</p>
         </div>
       </div>
