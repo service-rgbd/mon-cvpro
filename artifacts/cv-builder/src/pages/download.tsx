@@ -20,6 +20,7 @@ import { useGetCv, useGetCvDownloadToken } from "@workspace/api-client-react";
 import { CvData, cvFromApi, defaultCvData } from "@/types/cv";
 import { useToast } from "@/hooks/use-toast";
 import { getCvMissingRequiredFields } from "@/lib/cv-validation";
+import { exportCvToPdfBlob } from "@/lib/cv-pdf-export";
 
 const FEATURES = [
   "Format PDF haute qualité",
@@ -119,6 +120,14 @@ export default function DownloadPage() {
       },
     );
   }, [cvId, getToken, isPaid, toast]);
+
+  const generatePdfForShare = useCallback(async () => {
+    if (!cvId || !isPaid) {
+      throw new Error("Paiement requis");
+    }
+    await getToken.mutateAsync({ id: cvId, data: {} });
+    return exportCvToPdfBlob();
+  }, [cvId, getToken, isPaid]);
 
   return (
     <>
@@ -263,7 +272,11 @@ export default function DownloadPage() {
                         </>
                       )}
                     </Button>
-                    <CvShareButton cv={cv} disabled={isLoading} />
+                    <CvShareButton
+                      cv={cv}
+                      disabled={isLoading || getToken.isPending}
+                      generatePdf={generatePdfForShare}
+                    />
                     <Button
                       variant="outline"
                       className="w-full gap-2"

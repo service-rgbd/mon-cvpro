@@ -342,6 +342,33 @@
   visibility: hidden;
 }
 
+/* Capture PDF pour partage (html2pdf) */
+body.cv-pdf-capture .cv-print-surface {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 210mm !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  z-index: 99998 !important;
+}
+
+body.cv-pdf-capture #cv-print-area,
+body.cv-pdf-capture #cv-print-area * {
+  visibility: visible !important;
+}
+
+body.cv-pdf-capture #cv-print-area {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+  display: flex !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  box-shadow: none !important;
+}
+
 /* Aperçus écran — jamais imprimés (seul #cv-print-area l'est) */
 .cv-preview-screen {
   print: hidden;

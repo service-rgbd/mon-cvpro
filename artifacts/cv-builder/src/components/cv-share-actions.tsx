@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Mail, MessageCircle, Send, Share2, X } from "lucide-react";
+import { Loader2, Mail, MessageCircle, Send, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { cvPdfFilename } from "@/lib/cv-pdf-export";
 import type { CvData } from "@/types/cv";
 
 function buildShareContent(cv: CvData) {
@@ -9,34 +10,59 @@ function buildShareContent(cv: CvData) {
   const fullName = [pi.firstName, pi.lastName].filter(Boolean).join(" ").trim() || "Mon CV";
   const profession = pi.profession?.trim();
   const contact = [pi.phone?.trim(), pi.email?.trim()].filter(Boolean).join(" · ");
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const summary = pi.summary?.trim();
+  const topSkills = cv.skills
+    .slice(0, 6)
+    .map((s) => s.name)
+    .filter(Boolean)
+    .join(", ");
+  const lastJob = cv.experiences[0];
+  const experienceLine = lastJob
+    ? `${lastJob.position}${lastJob.company ? ` — ${lastJob.company}` : ""}`
+    : undefined;
 
   const lines = [
-    `Bonjour,`,
-    ``,
-    `Je partage mon CV professionnel créé avec CVPro.`,
-    ``,
+    "Bonjour,",
+    "",
+    "Veuillez trouver ci-joint mon CV professionnel (fichier PDF).",
+    "",
     fullName,
     profession,
+    experienceLine,
     contact || undefined,
-    ``,
-    appUrl ? `Créez le vôtre sur CVPro : ${appUrl}` : undefined,
+    summary ? `Profil : ${summary}` : undefined,
+    topSkills ? `Compétences : ${topSkills}` : undefined,
+    "",
+    "Cordialement,",
+    fullName,
   ].filter(Boolean);
 
   return {
     title: `CV — ${fullName}`,
     text: lines.join("\n"),
-    url: appUrl,
+    filename: cvPdfFilename(cv),
   };
+}
+
+function downloadPdfBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 interface CvShareButtonProps {
   cv: CvData;
   disabled?: boolean;
+  /** Génère le PDF (après validation paiement côté parent). */
+  generatePdf: () => Promise<Blob>;
 }
 
-export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
+export default function CvShareButton({ cv, disabled, generatePdf }: CvShareButtonProps) {
   const [open, setOpen] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const { toast } = useToast();
 
   const close = useCallback(() => setOpen(false), []);
@@ -56,59 +82,94 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
     };
   }, [open, close]);
 
-  const share = () => buildShareContent(cv);
-
-  const openShare = (href: string) => {
-    close();
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
-
-  const handleWhatsApp = () => {
-    const { text } = share();
-    openShare(`https://wa.me/?text=${encodeURIComponent(text)}`);
-  };
-
-  const handleTelegram = () => {
-    const { text, url } = share();
-    openShare(
-      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
-    );
-  };
-
-  const handleEmail = () => {
-    const { title, text } = share();
-    close();
-    window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
-  };
-
-  const handleNativeShare = async () => {
-    const { title, text, url } = share();
-
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, text, url });
-        close();
-        return;
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-      }
-    }
-
+  const preparePdf = useCallback(async () => {
+    setPreparing(true);
     try {
-      await navigator.clipboard.writeText(text);
-      close();
-      toast({
-        title: "Message copié",
-        description: "Collez-le dans WhatsApp, Telegram ou votre app de messagerie.",
-      });
-    } catch {
-      toast({
-        title: "Partage indisponible",
-        description: "Utilisez WhatsApp, e-mail ou Telegram ci-dessus.",
-        variant: "destructive",
-      });
+      return await generatePdf();
+    } finally {
+      setPreparing(false);
     }
-  };
+  }, [generatePdf]);
+
+  const shareWithPdf = useCallback(
+    async (action: "whatsapp" | "telegram" | "email" | "native") => {
+      const { title, text, filename } = buildShareContent(cv);
+
+      let blob: Blob;
+      try {
+        blob = await preparePdf();
+      } catch {
+        toast({
+          title: "PDF indisponible",
+          description: "Impossible de générer le CV. Réessayez ou utilisez « Télécharger en PDF ».",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const file = new File([blob], filename, { type: "application/pdf" });
+
+      const canShareFiles =
+        typeof navigator !== "undefined" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] });
+
+      if (action === "native" || (canShareFiles && (action === "whatsapp" || action === "telegram"))) {
+        try {
+          await navigator.share({
+            title,
+            text,
+            files: [file],
+          });
+          close();
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+        }
+      }
+
+      downloadPdfBlob(blob, filename);
+
+      if (action === "whatsapp") {
+        const message = `${text}\n\n📎 Le fichier PDF « ${filename} » vient d'être téléchargé : joignez-le à ce message.`;
+        close();
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+        toast({
+          title: "PDF téléchargé",
+          description: "Dans WhatsApp, appuyez sur 📎 et sélectionnez le PDF pour l'envoyer.",
+        });
+        return;
+      }
+
+      if (action === "telegram") {
+        const message = `${text}\n\n📎 Joignez le PDF « ${filename} » (téléchargé sur votre appareil).`;
+        close();
+        window.open(
+          `https://t.me/share/url?text=${encodeURIComponent(message)}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
+        toast({
+          title: "PDF téléchargé",
+          description: "Dans Telegram, joignez le fichier PDF depuis vos téléchargements.",
+        });
+        return;
+      }
+
+      if (action === "email") {
+        const body = `${text}\n\n📎 Pièce jointe : ${filename} (fichier téléchargé — ajoutez-le à votre e-mail).`;
+        close();
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+        toast({
+          title: "PDF téléchargé",
+          description: "Ajoutez le PDF en pièce jointe dans votre logiciel de messagerie.",
+        });
+      }
+    },
+    [cv, close, preparePdf, toast],
+  );
+
+  const buttonsDisabled = disabled || preparing;
 
   return (
     <>
@@ -144,7 +205,7 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
                 Partager mon CV
               </h2>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Envoyez un message à un recruteur ou un contact via votre application préférée.
+                Un PDF de votre CV et un message de présentation seront préparés pour l&apos;envoi.
               </p>
             </div>
 
@@ -157,14 +218,21 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
               <X className="w-4 h-4" />
             </button>
 
+            {preparing && (
+              <div className="flex items-center justify-center gap-2 px-5 pb-3 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Génération du PDF…
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2 px-5 pb-5">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="gap-2 h-11 justify-start"
-                disabled={disabled}
-                onClick={handleWhatsApp}
+                disabled={buttonsDisabled}
+                onClick={() => shareWithPdf("whatsapp")}
                 data-testid="button-share-whatsapp"
               >
                 <MessageCircle className="w-4 h-4 text-[#25D366]" />
@@ -176,8 +244,8 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
                 variant="outline"
                 size="sm"
                 className="gap-2 h-11 justify-start"
-                disabled={disabled}
-                onClick={handleEmail}
+                disabled={buttonsDisabled}
+                onClick={() => shareWithPdf("email")}
                 data-testid="button-share-email"
               >
                 <Mail className="w-4 h-4" />
@@ -189,8 +257,8 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
                 variant="outline"
                 size="sm"
                 className="gap-2 h-11 justify-start"
-                disabled={disabled}
-                onClick={handleTelegram}
+                disabled={buttonsDisabled}
+                onClick={() => shareWithPdf("telegram")}
                 data-testid="button-share-telegram"
               >
                 <Send className="w-4 h-4 text-[#229ED9]" />
@@ -202,12 +270,12 @@ export default function CvShareButton({ cv, disabled }: CvShareButtonProps) {
                 variant="outline"
                 size="sm"
                 className="gap-2 h-11 justify-start"
-                disabled={disabled}
-                onClick={handleNativeShare}
+                disabled={buttonsDisabled}
+                onClick={() => shareWithPdf("native")}
                 data-testid="button-share-contact"
               >
                 <Share2 className="w-4 h-4" />
-                Contact
+                Autre app
               </Button>
             </div>
           </div>
