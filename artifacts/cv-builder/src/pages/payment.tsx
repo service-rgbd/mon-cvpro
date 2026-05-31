@@ -8,7 +8,6 @@ import {
   useCreatePayment,
   useGetCv,
   useInitializePaystackPayment,
-  useVerifyPaystackPayment,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/logo";
@@ -27,7 +26,7 @@ export default function Payment() {
   const cvId = localStorage.getItem("cv_id") || "";
 
   const { data: cvData, isError: cvError, error: cvFetchError } = useGetCv(cvId, {
-    query: { enabled: !!cvId, retry: false },
+    query: { enabled: !!cvId, retry: false, staleTime: 0, refetchOnMount: "always" },
   });
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function Payment() {
       clearCvSession();
       toast({
         title: "CV introuvable",
-        description: "La session a expiré (serveur redémarré). Recréez votre CV dans l'éditeur.",
+        description: "La session a expiré. Recréez votre CV dans l'éditeur.",
         variant: "destructive",
       });
       setTimeout(() => setLocation("/builder"), 1200);
@@ -50,7 +49,7 @@ export default function Payment() {
     if (!cvId) {
       toast({
         title: "Erreur",
-        description: "Aucun CV trouvé. Veuillez créer votre CV d'abord.",
+        description: "Aucun CV trouvé. Créez votre CV dans l'éditeur d'abord.",
         variant: "destructive",
       });
       return;
@@ -68,63 +67,55 @@ export default function Payment() {
 
     setStep("processing");
 
-    createPayment.mutate(
-      { data: { cvId, amount: CV_PRICE_FCFA, currency: CV_CURRENCY, method: "paystack" } },
-      {
-        onSuccess: (payment) => {
-          initializePaystack.mutate(
-            { id: payment.id, data: { email: trimmedEmail } },
-            {
-              onSuccess: (paystackData) => {
-                if (paystackData.authorizationUrl) {
-                  window.location.href = paystackData.authorizationUrl;
-                  return;
-                }
-                setStep("form");
-                toast({
-                  title: "Erreur Paystack",
-                  description: "URL de paiement indisponible.",
-                  variant: "destructive",
-                });
-              },
-              onError: (err) => {
-                setStep("form");
-                const msg = getApiErrorMessage(err) ?? "Configuration Paystack manquante côté serveur.";
-                toast({
-                  title: msg.includes("configur") ? "Paystack non configuré" : "Erreur d'initialisation",
-                  description: msg.includes("configur")
-                    ? "Enregistrez env.local et redémarrez l'API : pnpm run dev:api"
-                    : msg,
-                  variant: "destructive",
-                });
-              },
-            },
-          );
-        },
-        onError: (err) => {
-          setStep("form");
-          if (isNotFoundError(err)) {
-            clearCvSession();
-            toast({
-              title: "CV introuvable",
-              description: "Retournez au builder pour recréer votre CV, puis réessayez le paiement.",
-              variant: "destructive",
-            });
-            setTimeout(() => setLocation("/builder"), 1500);
-            return;
-          }
-          const alreadyPaid = getApiErrorMessage(err)?.includes("already paid");
-          toast({
-            title: alreadyPaid ? "Déjà payé" : "Erreur",
-            description: alreadyPaid
-              ? "Ce CV a déjà été payé."
-              : getApiErrorMessage(err) ?? "Impossible de créer la transaction.",
-            variant: "destructive",
-          });
-          if (alreadyPaid) setTimeout(() => setLocation("/download"), 1000);
-        },
-      },
-    );
+    try {
+      const payment = await createPayment.mutateAsync({
+        data: { cvId, amount: CV_PRICE_FCFA, currency: CV_CURRENCY, method: "paystack" },
+      });
+
+      const paystackData = await initializePaystack.mutateAsync({
+        id: payment.id,
+        data: { email: trimmedEmail },
+      });
+
+      const checkoutUrl = paystackData.authorizationUrl?.trim();
+      if (!checkoutUrl) {
+        throw new Error("URL de paiement Paystack indisponible.");
+      }
+
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setStep("form");
+
+      if (isNotFoundError(err)) {
+        clearCvSession();
+        toast({
+          title: "CV introuvable",
+          description: "Retournez au builder, enregistrez votre CV, puis réessayez.",
+          variant: "destructive",
+        });
+        setTimeout(() => setLocation("/builder"), 1500);
+        return;
+      }
+
+      const msg = getApiErrorMessage(err) ?? "Impossible d'ouvrir Paystack.";
+      const isConfig = /configur/i.test(msg);
+      const isPaystackMsg = /paystack|currency|amount|key/i.test(msg);
+
+      toast({
+        title: isConfig ? "Paystack non configuré" : "Erreur de paiement",
+        description: isConfig
+          ? "Vérifiez PAYSTACK_SECRET_KEY et PAYSTACK_PUBLIC_KEY sur le serveur Render."
+          : isPaystackMsg
+            ? msg
+            : `${msg} Réessayez ou contactez le support si le problème persiste.`,
+        variant: "destructive",
+      });
+
+      const alreadyPaid = msg.includes("already paid") || msg.includes("Déjà payé");
+      if (alreadyPaid) {
+        setTimeout(() => setLocation("/download"), 1000);
+      }
+    }
   };
 
   if (step === "processing") {
@@ -134,9 +125,9 @@ export default function Payment() {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Paiement Paystack</h2>
+          <h2 className="text-xl font-bold mb-2">Redirection Paystack</h2>
           <p className="text-muted-foreground">
-            Finalisez le paiement dans la fenêtre sécurisée Paystack...
+            Ouverture de la page de paiement sécurisée…
           </p>
         </div>
       </div>
@@ -227,14 +218,14 @@ export default function Payment() {
                   data-testid="input-payment-email"
                 />
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Utilisé uniquement par Paystack pour le reçu. CVPro ne crée pas de compte et ne stocke pas cet e-mail.
+                  Utilisé uniquement par Paystack pour le reçu. CVPro ne crée pas de compte.
                 </p>
               </div>
 
               <Button
                 className="w-full"
                 size="lg"
-                onClick={handlePay}
+                onClick={() => void handlePay()}
                 disabled={createPayment.isPending || initializePaystack.isPending}
                 data-testid="button-confirm-payment"
               >
@@ -243,7 +234,7 @@ export default function Payment() {
 
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Shield className="w-3 h-3" />
-                Paiement chiffré via Paystack
+                Paiement chiffré via Paystack — vous serez redirigé vers checkout.paystack.com
               </div>
             </div>
           </div>

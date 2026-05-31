@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import {
@@ -20,12 +21,14 @@ import {
   useCreateCv,
   useUpdateCv,
   useGetCv,
+  getGetCvQueryKey,
 } from "@workspace/api-client-react";
 import { CvData, defaultCvData, cvFromApi, Experience, Education, Skill, Language, Certification, Project, Interest } from "@/types/cv";
 import { useToast } from "@/hooks/use-toast";
 import { clearCvSession, isNotFoundError } from "@/lib/cv-session";
 import { shouldShowBuilderGuide } from "@/lib/builder-guide";
 import { getCvMissingRequiredFields, isCvReadyForDownload } from "@/lib/cv-validation";
+import { buildCvUpdatePayload } from "@/lib/cv-persist";
 import CvAssistant from "@/components/cv-assistant";
 import SectionHeader from "@/components/section-header";
 
@@ -82,8 +85,10 @@ export default function Builder() {
   const [loadingCv, setLoadingCv] = useState(() => !!localStorage.getItem("cv_id"));
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHydratedRef = useRef(false);
+  const [flushing, setFlushing] = useState(false);
 
   const createCv = useCreateCv();
   const updateCv = useUpdateCv();
@@ -148,35 +153,64 @@ export default function Builder() {
     );
   }, [cvId]);
 
-  // Debounced auto-save
-  const scheduleAutoSave = useCallback((newCv: CvData) => {
-    if (!isHydratedRef.current) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      const id = cvId || localStorage.getItem("cv_id");
-      if (!id) return;
-      setSaving(true);
-      updateCv.mutate(
-        {
-          id,
-          data: {
-            personalInfo: { ...newCv.personalInfo, photoUrl: undefined },
-            experiences: newCv.experiences,
-            education: newCv.education,
-            skills: newCv.skills,
-            languages: newCv.languages,
-            certifications: newCv.certifications,
-            projects: newCv.projects,
-            interests: newCv.interests,
-            customization: newCv.customization,
+  const persistCv = useCallback(
+    (data: CvData, id: string) =>
+      new Promise<void>((resolve, reject) => {
+        updateCv.mutate(
+          { id, data: buildCvUpdatePayload(data) },
+          {
+            onSuccess: (saved) => {
+              queryClient.setQueryData(getGetCvQueryKey(id), saved);
+              resolve();
+            },
+            onError: () => reject(new Error("save_failed")),
           },
-        },
-        {
-          onSettled: () => setSaving(false),
-        }
-      );
-    }, 800);
-  }, [cvId, updateCv]);
+        );
+      }),
+    [updateCv, queryClient],
+  );
+
+  /** Enregistre immédiatement sur le serveur (avant téléchargement / paiement). */
+  const flushAutoSave = useCallback(async (): Promise<boolean> => {
+    const id = cvId || localStorage.getItem("cv_id");
+    if (!id || !isHydratedRef.current) return true;
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    setFlushing(true);
+    try {
+      await persistCv(cv, id);
+      return true;
+    } catch {
+      toast({
+        title: "Enregistrement impossible",
+        description: "Vérifiez votre connexion et réessayez.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setFlushing(false);
+      setSaving(false);
+    }
+  }, [cv, cvId, persistCv, toast]);
+
+  // Debounced auto-save
+  const scheduleAutoSave = useCallback(
+    (newCv: CvData) => {
+      if (!isHydratedRef.current) return;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        const id = cvId || localStorage.getItem("cv_id");
+        if (!id) return;
+        setSaving(true);
+        void persistCv(newCv, id).finally(() => setSaving(false));
+      }, 800);
+    },
+    [cvId, persistCv],
+  );
 
   const updateCvState = useCallback((updater: (prev: CvData) => CvData) => {
     setCv((prev) => {
@@ -223,7 +257,21 @@ export default function Builder() {
     setPreviewOpen(true);
   };
 
-  const handleContinueToDownload = () => {
+  const handleContinueToDownload = async () => {
+    const missing = getCvMissingRequiredFields(cv);
+    if (missing.length > 0) {
+      toast({
+        title: "Informations obligatoires manquantes",
+        description: `Complétez : ${missing.map((f) => f.label).join(", ")}`,
+        variant: "destructive",
+      });
+      setActiveSection(missing[0].sectionId);
+      return;
+    }
+
+    const ok = await flushAutoSave();
+    if (!ok) return;
+
     setPreviewOpen(false);
     setPreviewForDownload(false);
     setLocation("/download");
@@ -265,7 +313,11 @@ export default function Builder() {
         </Link>
         <Logo height={56} />
         <div className="flex-1" />
-        {saving && <span className="text-xs text-muted-foreground">Enregistrement...</span>}
+        {(saving || flushing) && (
+          <span className="text-xs text-muted-foreground">
+            {flushing ? "Synchronisation…" : "Enregistrement…"}
+          </span>
+        )}
         <Link href="/templates">
           <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
             <Eye className="w-4 h-4" />
@@ -287,7 +339,7 @@ export default function Builder() {
           size="sm"
           className="gap-2 shrink-0"
           onClick={handleOpenPreviewForDownload}
-          disabled={loadingCv || !canDownload}
+          disabled={loadingCv || flushing || !canDownload}
           data-testid="button-download"
           title={
             !canDownload
@@ -449,10 +501,11 @@ export default function Builder() {
                 <Button
                   size="sm"
                   className="flex-1 gap-2"
-                  onClick={handleContinueToDownload}
+                  onClick={() => void handleContinueToDownload()}
+                  disabled={flushing}
                   data-testid="button-continue-download"
                 >
-                  Continuer vers Télécharger
+                  {flushing ? "Enregistrement…" : "Continuer vers Télécharger"}
                   <Download className="w-4 h-4" />
                 </Button>
               </>

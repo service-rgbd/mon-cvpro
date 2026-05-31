@@ -8,6 +8,7 @@ export {
   useGetCvPayment,
   getCvPayment,
   getGetCvPaymentQueryKey,
+  getGetCvQueryKey,
   useInitializePaystackPayment,
   useVerifyPaystackPayment,
   initializePaystackPayment,

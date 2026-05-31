@@ -34,8 +34,12 @@ export default function DownloadPage() {
   const [, setLocation] = useLocation();
   const [printing, setPrinting] = useState(false);
 
-  const { data: cvData, isLoading: cvLoading } = useGetCv(cvId, {
-    query: { enabled: !!cvId },
+  const {
+    data: cvData,
+    isLoading: cvLoading,
+    isFetching: cvFetching,
+  } = useGetCv(cvId, {
+    query: { enabled: !!cvId, staleTime: 0, refetchOnMount: "always" },
   });
 
   const getToken = useGetCvDownloadToken();
@@ -44,21 +48,26 @@ export default function DownloadPage() {
     ? cvFromApi(cvData as Record<string, unknown>, localStorage.getItem("cv_photo"))
     : defaultCvData;
 
-  const isLoading = cvLoading;
+  const isLoading = cvLoading || cvFetching;
   const isPaid = cv.isPaid === true;
 
   useEffect(() => {
-    if (isLoading || !cvData) return;
-    const missing = getCvMissingRequiredFields(cv);
-    if (missing.length > 0) {
-      toast({
-        title: "Informations obligatoires manquantes",
-        description: `Complétez : ${missing.map((f) => f.label).join(", ")}`,
-        variant: "destructive",
-      });
+    if (!cvId) {
       setLocation("/builder");
+      return;
     }
-  }, [cv, cvData, isLoading, setLocation, toast]);
+    if (cvLoading || cvFetching || !cvData) return;
+
+    const missing = getCvMissingRequiredFields(cv);
+    if (missing.length === 0) return;
+
+    toast({
+      title: "Informations obligatoires manquantes",
+      description: `Complétez dans l'éditeur : ${missing.map((f) => f.label).join(", ")}`,
+      variant: "destructive",
+    });
+    setLocation("/builder");
+  }, [cvId, cv, cvData, cvLoading, cvFetching, setLocation, toast]);
 
   useEffect(() => {
     const onBeforePrint = () => {

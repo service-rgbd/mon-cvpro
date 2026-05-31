@@ -87,11 +87,22 @@ export function isPaystackConfigured(): boolean {
   return Boolean(getPaystackSecretKey() && getPaystackPublicKey());
 }
 
+const PRODUCTION_APP_URL = "https://mon-cvpro.binary-security.com";
+
 export function getAppUrl(): string {
-  return (
+  let url = (
     process.env.APP_URL ??
     process.env.FRONTEND_URL ??
     process.env.VITE_APP_URL ??
     "http://localhost:22723"
   ).replace(/\/+$/, "");
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    /localhost|127\.0\.0\.1/i.test(url)
+  ) {
+    url = PRODUCTION_APP_URL;
+  }
+
+  return url;
 }

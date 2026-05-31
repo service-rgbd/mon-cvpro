@@ -28,7 +28,11 @@ export function getCvMissingRequiredFields(cv: CvData): CvRequiredField[] {
     missing.push({ key: "address", label: "Adresse", sectionId: "personal" });
   }
   if (!pi.summary?.trim() || pi.summary.trim().length < SUMMARY_MIN_LENGTH) {
-    missing.push({ key: "summary", label: "Résumé professionnel", sectionId: "summary" });
+    missing.push({
+      key: "summary",
+      label: `Résumé professionnel (min. ${SUMMARY_MIN_LENGTH} caractères)`,
+      sectionId: "summary",
+    });
   }
 
   return missing;
