@@ -1,8 +1,8 @@
 /** Doit rester aligné avec artifacts/cv-builder/src/config/pricing.ts */
-export const CV_PRICE_FCFA = 500;
+export const CV_PRICE_FCFA = 100;
 export const CV_CURRENCY = "XOF";
 
-/** Paystack : amount = FCFA × 100 (règle XOF, doc officielle) */
+/** Paystack : amount = FCFA × 100 (règle XOF, doc officielle). Prix actuel : 100 FCFA test */
 export function toPaystackAmount(amountFcfa: number): number {
   return Math.round(Number(amountFcfa) * 100);
 }
