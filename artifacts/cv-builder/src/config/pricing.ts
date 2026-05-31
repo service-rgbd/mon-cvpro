@@ -1,5 +1,5 @@
-/** Prix affiché et facturé par CV (Franc CFA) — test Paystack */
-export const CV_PRICE_FCFA = 100;
+/** Prix affiché et facturé par CV (Franc CFA) */
+export const CV_PRICE_FCFA = 500;
 
 /** Code ISO 4217 — Paystack XOF (Franc CFA BCEAO) */
 export const CV_CURRENCY = "XOF";
@@ -13,7 +13,7 @@ export function formatPriceFcfa(amount: number = CV_PRICE_FCFA): string {
  * Montant envoyé à Paystack (API).
  * Doc Paystack : même pour XOF, multiplier par 100 (pas de centimes réels).
  * @see https://paystack.com/docs/api/#supported-currency
- * Ex. 100 FCFA → amount: 10000 (affiché 100 FCFA sur checkout)
+ * Ex. 500 FCFA → amount: 50000 (affiché 500 FCFA sur checkout)
  */
 export function toPaystackAmount(amountFcfa: number = CV_PRICE_FCFA): number {
   return Math.round(Number(amountFcfa) * 100);
