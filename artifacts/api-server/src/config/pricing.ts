@@ -11,3 +11,15 @@ export function toPaystackAmount(amountFcfa: number): number {
 export function fromPaystackAmount(paystackAmount: number): number {
   return Math.round(Number(paystackAmount) / 100);
 }
+
+/** Vérifie que le montant Paystack correspond au prix CV (gère XOF ×100 ou valeur brute). */
+export function paystackAmountMatchesFcfa(
+  paystackAmount: number,
+  expectedFcfa: number,
+): boolean {
+  const raw = Math.round(Number(paystackAmount));
+  if (raw === expectedFcfa) return true;
+  if (fromPaystackAmount(raw) === expectedFcfa) return true;
+  if (raw === toPaystackAmount(expectedFcfa)) return true;
+  return false;
+}

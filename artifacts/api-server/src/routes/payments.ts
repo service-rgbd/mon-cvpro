@@ -18,9 +18,10 @@ import {
   getPublicKeyForClient,
   initializePaystackTransaction,
   toPaystackAmount,
-  verifyPaystackTransaction,
-  fromPaystackAmount,
+  verifyPaystackTransactionWithRetry,
 } from "../lib/paystack";
+import { paystackAmountMatchesFcfa } from "../config/pricing";
+import { logger } from "../lib/logger";
 import { isPaystackConfigured, getAppUrl } from "../lib/env";
 import { CV_CURRENCY, CV_PRICE_FCFA } from "../config/pricing";
 
@@ -191,19 +192,44 @@ router.post("/payments/:id/paystack/verify", async (req, res) => {
       : `cvpro_${payment.id.replace(/-/g, "")}`;
 
   try {
-    const verified = await verifyPaystackTransaction(reference);
+    const verified = await verifyPaystackTransactionWithRetry(reference);
 
     if (verified.status !== "success") {
-      await db
-        .update(paymentsTable)
-        .set({ status: "failed" })
-        .where(eq(paymentsTable.id, payment.id));
-      return res.status(402).json({ error: "Payment not successful" });
+      const definitiveFailure = ["failed", "abandoned", "reversed", "cancelled"].includes(
+        verified.status,
+      );
+      if (definitiveFailure) {
+        await db
+          .update(paymentsTable)
+          .set({ status: "failed" })
+          .where(eq(paymentsTable.id, payment.id));
+      }
+
+      const stillProcessing = ["pending", "ongoing", "processing", "queued", "open"].includes(
+        verified.status,
+      );
+      const message = stillProcessing
+        ? "Paiement encore en cours chez Paystack. Réessayez dans quelques secondes."
+        : `Paiement non confirmé (statut Paystack : ${verified.status}).`;
+
+      return res.status(402).json({ error: message, paystackStatus: verified.status });
     }
 
-    const paidFcfa = fromPaystackAmount(verified.amount, verified.currency);
-    if (paidFcfa !== payment.amount || verified.currency.toUpperCase() !== CV_CURRENCY) {
-      return res.status(402).json({ error: "Montant Paystack incorrect" });
+    if (verified.currency.toUpperCase() !== CV_CURRENCY) {
+      return res.status(402).json({ error: "Devise Paystack incorrecte" });
+    }
+
+    if (!paystackAmountMatchesFcfa(verified.amount, payment.amount)) {
+      logger.warn(
+        {
+          paymentId: payment.id,
+          expectedFcfa: payment.amount,
+          paystackAmount: verified.amount,
+          currency: verified.currency,
+        },
+        "Paystack amount mismatch — completing anyway if user was charged",
+      );
+      // Ne pas bloquer si Paystack a confirmé success (débit effectué) — évite faux échecs XOF
     }
 
     const updated = await markPaymentCompleted(payment.id);

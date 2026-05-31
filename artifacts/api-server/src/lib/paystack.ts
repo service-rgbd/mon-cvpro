@@ -107,6 +107,51 @@ export async function verifyPaystackTransaction(reference: string) {
   return paystackFetch<PaystackVerifyData>(`/transaction/verify/${encodeURIComponent(reference)}`);
 }
 
+const PAYSTACK_PENDING_STATUSES = new Set([
+  "pending",
+  "ongoing",
+  "processing",
+  "queued",
+  "open",
+]);
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Paystack peut renvoyer « pending » juste après la redirection — on réessaie avant d'échouer. */
+export async function verifyPaystackTransactionWithRetry(
+  reference: string,
+  options?: { maxAttempts?: number; delayMs?: number },
+) {
+  const maxAttempts = options?.maxAttempts ?? 8;
+  const delayMs = options?.delayMs ?? 2000;
+
+  let last: PaystackVerifyData | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    last = await verifyPaystackTransaction(reference);
+    logger.info(
+      { reference, attempt, status: last.status, amount: last.amount, currency: last.currency },
+      "Paystack verify attempt",
+    );
+
+    if (last.status === "success") {
+      return last;
+    }
+
+    if (!PAYSTACK_PENDING_STATUSES.has(last.status)) {
+      break;
+    }
+
+    if (attempt < maxAttempts) {
+      await sleep(delayMs);
+    }
+  }
+
+  return last!;
+}
+
 export function getPublicKeyForClient() {
   const publicKey = getPaystackPublicKey();
   if (!publicKey) {
