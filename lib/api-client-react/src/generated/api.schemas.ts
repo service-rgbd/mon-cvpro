@@ -181,6 +181,10 @@ export const TemplateCategory = {
   creative: 'creative',
   classic: 'classic',
   executive: 'executive',
+  corporate: 'corporate',
+  consultant: 'consultant',
+  minimal: 'minimal',
+  international: 'international',
 } as const;
 
 export interface Template {
@@ -209,6 +213,7 @@ export const PaymentInputMethod = {
   mobile_money: 'mobile_money',
   wave: 'wave',
   paypal: 'paypal',
+  paystack: 'paystack',
 } as const;
 
 export interface PaymentInput {
@@ -237,8 +242,26 @@ export interface Payment {
   createdAt: string;
 }
 
+export interface PaystackInitializeInput {
+  email: string;
+}
+
+export interface PaystackInitializeResult {
+  authorizationUrl?: string;
+  accessCode?: string;
+  publicKey: string;
+  reference: string;
+  amount: number;
+  currency: string;
+}
+
+export interface PaystackVerifyInput {
+  reference?: string;
+}
+
 export interface DownloadTokenRequest {
-  paymentId: string;
+  /** Optional legacy field — access is granted when the CV is marked paid server-side. */
+  paymentId?: string;
 }
 
 export interface DownloadToken {

@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CvPreview from "@/components/cv-preview";
+import Logo from "@/components/logo";
+import { CV_TEMPLATES, CATEGORY_LABELS } from "@/data/templates";
 import { defaultCvData } from "@/types/cv";
 
 const SAMPLE_CV = {
@@ -38,19 +40,9 @@ const SAMPLE_CV = {
   interests: [{ id: "1", name: "Open Source" }, { id: "2", name: "Trail" }],
 };
 
-const TEMPLATES = [
-  { id: "modern", name: "Modern", color: "#4F46E5", category: "modern", desc: "Minimaliste, élégant et corporate. Idéal pour le secteur tech, finance et conseil. La mise en page deux colonnes équilibre structure et lisibilité." },
-  { id: "creative", name: "Créatif", color: "#7C3AED", category: "creative", desc: "Graphique et audacieux avec un header accentué. Conçu pour les profils créatifs, marketing, design et communication." },
-  { id: "classic", name: "Classique", color: "#1e293b", category: "classic", desc: "Sobre, institutionnel et éprouvé. Le choix des professionnels expérimentés, académiques, et des secteurs traditionnels." },
-  { id: "executive", name: "Exécutif", color: "#B45309", category: "executive", desc: "Typographie forte, hiérarchie visuelle puissante. Conçu pour les cadres dirigeants, consultants senior et profils haut de gamme." },
-];
+const TEMPLATES = CV_TEMPLATES;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  modern: "Moderne",
-  creative: "Créatif",
-  classic: "Classique",
-  executive: "Exécutif",
-};
+const CATEGORY_LABELS_MAP = CATEGORY_LABELS;
 
 export default function Templates() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -63,20 +55,15 @@ export default function Templates() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
+      <nav className="sticky top-0 z-50 border-b bg-white">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Accueil</span>
           </Link>
-          <div className="flex items-center gap-2 ml-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">C</span>
-            </div>
-            <span className="font-bold">CVPro</span>
-          </div>
+          <Logo height={56} />
         </div>
       </nav>
 
@@ -90,7 +77,7 @@ export default function Templates() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-2 gap-6">
           {TEMPLATES.map((t) => (
             <div
               key={t.id}
@@ -118,7 +105,7 @@ export default function Templates() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: t.color + "20", color: t.color }}>
-                        {CATEGORY_LABELS[t.category]}
+                        {CATEGORY_LABELS_MAP[t.category]}
                       </span>
                     </div>
                     <h3 className="font-bold text-lg">{t.name}</h3>

@@ -111,9 +111,35 @@ export const defaultCvData: CvData = {
   interests: [],
   customization: {
     templateId: "modern",
-    primaryColor: "#4F46E5",
+    primaryColor: "#5D5CFF",
     fontFamily: "Inter",
     fontSize: "medium",
     photoStyle: "circle",
   },
 };
+
+export function cvFromApi(data: Record<string, unknown>, savedPhoto?: string | null): CvData {
+  const personalInfo = {
+    ...defaultCvData.personalInfo,
+    ...((data.personalInfo as PersonalInfo | undefined) ?? {}),
+    photoUrl: savedPhoto ?? (data.personalInfo as PersonalInfo | undefined)?.photoUrl ?? null,
+  };
+
+  return {
+    id: data.id as string | undefined,
+    sessionToken: data.sessionToken as string | undefined,
+    personalInfo,
+    experiences: (data.experiences as Experience[]) ?? [],
+    education: (data.education as Education[]) ?? [],
+    skills: (data.skills as Skill[]) ?? [],
+    languages: (data.languages as Language[]) ?? [],
+    certifications: (data.certifications as Certification[]) ?? [],
+    projects: (data.projects as Project[]) ?? [],
+    interests: (data.interests as Interest[]) ?? [],
+    customization: {
+      ...defaultCvData.customization,
+      ...((data.customization as CvCustomization | undefined) ?? {}),
+    },
+    isPaid: data.isPaid as boolean | undefined,
+  };
+}

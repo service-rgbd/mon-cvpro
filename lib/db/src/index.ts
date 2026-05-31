@@ -1,16 +1,32 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+import { createMemoryDb } from "./memory";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+const useMemoryDb =
+  process.env.DATABASE_URL === "memory://" ||
+  process.env.USE_MEMORY_DB === "1";
+
+type Db = ReturnType<typeof drizzlePg<typeof schema>>;
+
+let pool: pg.Pool | undefined;
+let db: Db;
+
+if (useMemoryDb) {
+  const memory = await createMemoryDb();
+  db = memory.db as Db;
+} else {
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL must be set. Did you forget to provision a database?",
+    );
+  }
+
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  db = drizzlePg(pool, { schema });
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
-
+export { pool, db };
 export * from "./schema";

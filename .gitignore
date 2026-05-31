@@ -29,13 +29,17 @@ node_modules
 
 # misc
 /.sass-cache
-/connect.lock
 /coverage
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
 testem.log
 /typings
+
+# Secrets
+.env
+.env.local
+env.local
 
 # System Files
 .DS_Store

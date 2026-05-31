@@ -1,0 +1,10 @@
+name = "mon-cvpro"
+compatibility_date = "2024-08-01"
+workers_dev = true
+
+# Domaine custom : Workers & Pages → mon-cvpro → Settings → Domains
+# (DNS déjà géré dans Cloudflare — ne pas dupliquer via wrangler routes)
+
+[assets]
+directory = "./dist/public"
+not_found_handling = "single-page-application"

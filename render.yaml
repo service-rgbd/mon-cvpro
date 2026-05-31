@@ -1,0 +1,30 @@
+# Backend API — Render (runtime Node, sans Docker)
+# Dashboard : New → Blueprint ou lier le repo GitHub
+services:
+  - type: web
+    name: mon-cv-pro-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: >-
+      corepack enable &&
+      corepack prepare pnpm@10.32.1 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        value: https://mon-cvpro.binary-security.com
+      - key: CORS_ORIGINS
+        value: https://mon-cvpro.binary-security.com,https://mon-cvpro.perriermathilde170.workers.dev
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true

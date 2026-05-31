@@ -45,7 +45,7 @@ Application web premium de création de CV professionnel en français, avec aper
 - Landing page with live CV preview mockup and feature highlights
 - Template gallery with 4 premium templates (Modern, Créatif, Classique, Exécutif)
 - Split-layout CV builder: 10 form sections (personal, summary, experience, education, skills, languages, certifications, projects, interests, style) + live preview
-- Payment wall at 2,990 FCFA (Wave, Mobile Money, Carte bancaire, PayPal)
+- Payment wall at 500 FCFA (Paystack — XOF)
 - Download page with PDF export via browser print
 
 ## User preferences

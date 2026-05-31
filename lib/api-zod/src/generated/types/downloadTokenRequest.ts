@@ -7,5 +7,6 @@
  */
 
 export interface DownloadTokenRequest {
-  paymentId: string;
+  /** Optional legacy field — access is granted when the CV is marked paid server-side. */
+  paymentId?: string;
 }

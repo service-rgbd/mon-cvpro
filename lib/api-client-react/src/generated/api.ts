@@ -28,6 +28,9 @@ import type {
   HealthStatus,
   Payment,
   PaymentInput,
+  PaystackInitializeInput,
+  PaystackInitializeResult,
+  PaystackVerifyInput,
   PhotoUpload,
   PhotoUploadResult,
   Template
@@ -779,6 +782,298 @@ export const useConfirmPayment = <TError = ErrorType<void>,
       > => {
       return useMutation(getConfirmPaymentMutationOptions(options));
     }
+
+export const getInitializePaystackPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/payments/${id}/paystack/initialize`
+}
+
+/**
+ * @summary Initialize a Paystack transaction for a pending payment
+ */
+export const initializePaystackPayment = async (id: string,
+    paystackInitializeInput: PaystackInitializeInput, options?: RequestInit): Promise<PaystackInitializeResult> => {
+
+  return customFetch<PaystackInitializeResult>(getInitializePaystackPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      paystackInitializeInput,)
+  }
+);}
+
+
+
+
+export const getInitializePaystackPaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initializePaystackPayment>>, TError,{id: string;data: BodyType<PaystackInitializeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof initializePaystackPayment>>, TError,{id: string;data: BodyType<PaystackInitializeInput>}, TContext> => {
+
+const mutationKey = ['initializePaystackPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof initializePaystackPayment>>, {id: string;data: BodyType<PaystackInitializeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  initializePaystackPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InitializePaystackPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof initializePaystackPayment>>>
+    export type InitializePaystackPaymentMutationBody = BodyType<PaystackInitializeInput>
+    export type InitializePaystackPaymentMutationError = ErrorType<void>
+
+    /**
+ * @summary Initialize a Paystack transaction for a pending payment
+ */
+export const useInitializePaystackPayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initializePaystackPayment>>, TError,{id: string;data: BodyType<PaystackInitializeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof initializePaystackPayment>>,
+        TError,
+        {id: string;data: BodyType<PaystackInitializeInput>},
+        TContext
+      > => {
+      return useMutation(getInitializePaystackPaymentMutationOptions(options));
+    }
+
+export const getVerifyPaystackPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/payments/${id}/paystack/verify`
+}
+
+/**
+ * @summary Verify a Paystack transaction and unlock the CV
+ */
+export const verifyPaystackPayment = async (id: string,
+    paystackVerifyInput?: PaystackVerifyInput, options?: RequestInit): Promise<Payment> => {
+
+  return customFetch<Payment>(getVerifyPaystackPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      paystackVerifyInput,)
+  }
+);}
+
+
+
+
+export const getVerifyPaystackPaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPaystackPayment>>, TError,{id: string;data?: BodyType<PaystackVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPaystackPayment>>, TError,{id: string;data?: BodyType<PaystackVerifyInput>}, TContext> => {
+
+const mutationKey = ['verifyPaystackPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPaystackPayment>>, {id: string;data?: BodyType<PaystackVerifyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  verifyPaystackPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPaystackPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPaystackPayment>>>
+    export type VerifyPaystackPaymentMutationBody = BodyType<PaystackVerifyInput> | undefined
+    export type VerifyPaystackPaymentMutationError = ErrorType<void>
+
+    /**
+ * @summary Verify a Paystack transaction and unlock the CV
+ */
+export const useVerifyPaystackPayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPaystackPayment>>, TError,{id: string;data?: BodyType<PaystackVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPaystackPayment>>,
+        TError,
+        {id: string;data?: BodyType<PaystackVerifyInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyPaystackPaymentMutationOptions(options));
+    }
+
+export const getPaystackWebhookUrl = () => {
+
+
+
+
+  return `/api/webhooks/paystack`
+}
+
+/**
+ * @summary Paystack webhook (charge.success)
+ */
+export const paystackWebhook = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getPaystackWebhookUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPaystackWebhookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paystackWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof paystackWebhook>>, TError,void, TContext> => {
+
+const mutationKey = ['paystackWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof paystackWebhook>>, void> = () => {
+
+
+          return  paystackWebhook(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PaystackWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof paystackWebhook>>>
+
+    export type PaystackWebhookMutationError = ErrorType<void>
+
+    /**
+ * @summary Paystack webhook (charge.success)
+ */
+export const usePaystackWebhook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paystackWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof paystackWebhook>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPaystackWebhookMutationOptions(options));
+    }
+
+export const getGetCvPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/cvs/${id}/payment`
+}
+
+/**
+ * Allows re-download without storing payment data client-side. Returns 404 if the CV has no completed payment.
+ * @summary Get the latest completed payment for a CV
+ */
+export const getCvPayment = async (id: string, options?: RequestInit): Promise<Payment> => {
+
+  return customFetch<Payment>(getGetCvPaymentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCvPaymentQueryKey = (id: string,) => {
+    return [
+    `/api/cvs/${id}/payment`
+    ] as const;
+    }
+
+
+export const getGetCvPaymentQueryOptions = <TData = Awaited<ReturnType<typeof getCvPayment>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvPayment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCvPaymentQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCvPayment>>> = ({ signal }) => getCvPayment(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCvPayment>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCvPaymentQueryResult = NonNullable<Awaited<ReturnType<typeof getCvPayment>>>
+export type GetCvPaymentQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the latest completed payment for a CV
+ */
+
+export function useGetCvPayment<TData = Awaited<ReturnType<typeof getCvPayment>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCvPayment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCvPaymentQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetCvDownloadTokenUrl = (id: string,) => {
 

@@ -14,4 +14,5 @@ export const PaymentInputMethod = {
   mobile_money: 'mobile_money',
   wave: 'wave',
   paypal: 'paypal',
+  paystack: 'paystack',
 } as const;

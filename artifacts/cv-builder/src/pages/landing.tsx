@@ -1,8 +1,13 @@
 import { Link } from "wouter";
-import { CheckCircle, ArrowRight, Star, Users, Download, Zap } from "lucide-react";
+import { CheckCircle, ArrowRight, Star, Users, Download, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/logo";
 import CvPreview from "@/components/cv-preview";
 import { defaultCvData } from "@/types/cv";
+import { CV_TEMPLATES } from "@/data/templates";
+
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-personas.png`;
+const PREVIEW_TEMPLATES = CV_TEMPLATES.slice(0, 4);
 
 const SAMPLE_CV = {
   ...defaultCvData,
@@ -39,34 +44,51 @@ const SAMPLE_CV = {
 };
 
 const FEATURES = [
-  { icon: Zap, title: "Aperçu en temps réel", description: "Chaque modification apparaît instantanément dans votre CV. Voyez le résultat final au fur et à mesure." },
-  { icon: Star, title: "Templates premium", description: "4 modèles de CV professionnels conçus pour impressionner les recruteurs dans tous les secteurs." },
-  { icon: Download, title: "Téléchargement PDF", description: "Exportez votre CV en PDF haute qualité, optimisé pour l'impression et les candidatures en ligne." },
-  { icon: Users, title: "Pour tous les profils", description: "Étudiant, professionnel, freelance ou cadre dirigeant — CVPro s'adapte à votre niveau et secteur." },
+  { icon: Zap, title: "Aperçu en temps réel", description: "Chaque modification apparaît instantanément dans votre CV." },
+  { icon: Star, title: "Templates premium", description: "8 modèles professionnels pour tous les secteurs." },
+  { icon: Download, title: "Téléchargement PDF", description: "Export haute qualité, optimisé impression et ATS." },
+  { icon: Users, title: "Pour tous les profils", description: "Étudiant, pro, freelance ou cadre — CVPro s'adapte." },
 ];
 
-const TEMPLATES_PREVIEW = [
-  { id: "modern", name: "Modern", color: "#4F46E5", desc: "Épuré et impactant" },
-  { id: "creative", name: "Créatif", color: "#7C3AED", desc: "Moderne et audacieux" },
-  { id: "classic", name: "Classique", color: "#1e293b", desc: "Sobre et institutionnel" },
-  { id: "executive", name: "Exécutif", color: "#B45309", desc: "Haut de gamme et premium" },
-];
+function TemplatePreviewCard({ templateId, color, name }: { templateId: string; color: string; name: string }) {
+  return (
+    <div className="group block">
+      <div className="relative overflow-hidden bg-white" style={{ height: "200px" }}>
+        <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: `${color}12` }}>
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ transform: "scale(0.36)", transformOrigin: "center center" }}
+          >
+            <div style={{ width: "210mm", minHeight: "297mm", backgroundColor: "white" }}>
+              <CvPreview
+                cv={{
+                  ...SAMPLE_CV,
+                  customization: { ...SAMPLE_CV.customization, templateId, primaryColor: color },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2.5">
+          <p className="text-white font-medium text-sm">{name}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">C</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight">CVPro</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/templates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+    <div className="min-h-screen bg-white">
+      <nav className="sticky top-0 z-50 border-b bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-24 sm:h-28 flex items-center justify-between gap-3">
+          <Logo height={96} />
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <Link href="/templates" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
               Templates
+            </Link>
+            <Link href="/aide" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
+              Aide
             </Link>
             <Link href="/builder">
               <Button size="sm" data-testid="button-start-nav">Créer mon CV</Button>
@@ -76,145 +98,145 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
-              <Star className="w-3 h-3 fill-primary" />
-              Générateur de CV professionnel
-            </div>
-            <h1 className="text-5xl font-bold leading-tight tracking-tight mb-6">
-              Votre CV de{" "}
-              <span className="text-primary">carrière</span>{" "}
-              en quelques minutes
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              Créez un CV moderne et professionnel avec un aperçu en temps réel. Choisissez parmi nos templates premium, personnalisez à votre image, et téléchargez en PDF.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/builder">
-                <Button size="lg" className="gap-2" data-testid="button-start-hero">
-                  Commencer maintenant
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link href="/templates">
-                <Button size="lg" variant="outline" data-testid="button-view-templates">Voir les templates</Button>
-              </Link>
-            </div>
-            <div className="flex flex-wrap gap-4 mt-8">
-              {["Aperçu temps réel", "4 templates premium", "Export PDF", "Personnalisation"].map((f) => (
-                <div key={f} className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <CheckCircle className="w-4 h-4 text-primary shrink-0" />
-                  {f}
-                </div>
-              ))}
-            </div>
-          </div>
+      <section className="relative overflow-hidden border-b bg-white">
+        <div
+          className="absolute inset-y-0 right-0 hidden lg:block w-[52%] bg-no-repeat bg-right bg-contain pointer-events-none select-none"
+          style={{ backgroundImage: `url(${HERO_IMAGE})`, backgroundPosition: "right center" }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-y-0 right-0 hidden lg:block w-[52%] pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to right, #ffffff 0%, #ffffff 28%, rgba(255,255,255,0.88) 42%, transparent 58%)",
+          }}
+          aria-hidden="true"
+        />
 
-          {/* CV Preview */}
-          <div className="relative flex justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/10 rounded-2xl blur-3xl -z-10 scale-110" />
-              <div className="rounded-xl overflow-hidden shadow-2xl border bg-white" style={{ width: "280px", height: "360px" }}>
-                <div style={{ transform: "scale(0.52)", transformOrigin: "top left", width: "539px", height: "692px" }}>
-                  <CvPreview cv={SAMPLE_CV} />
-                </div>
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-10 lg:pt-20 lg:pb-16">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+            <div className="max-w-xl">
+              <p className="inline-flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-wider mb-5">
+                <Star className="w-3.5 h-3.5 fill-primary" />
+                Générateur de CV professionnel
+              </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-5">
+                Votre CV de{" "}
+                <span className="text-primary">carrière</span>{" "}
+                en quelques minutes
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-7">
+                Créez un CV moderne avec aperçu en temps réel. Personnalisez, puis téléchargez en PDF.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/builder">
+                  <Button size="lg" className="gap-2" data-testid="button-start-hero">
+                    Commencer maintenant
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href="/templates">
+                  <Button size="lg" variant="outline" data-testid="button-view-templates">
+                    Voir les templates
+                  </Button>
+                </Link>
               </div>
-              {/* Floating badges */}
-              <div className="absolute -right-6 top-8 bg-white rounded-xl shadow-lg border px-3 py-2 text-xs font-medium">
-                <div className="flex items-center gap-1.5 text-green-600">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  Mise à jour en direct
-                </div>
-              </div>
-              <div className="absolute -left-6 bottom-12 bg-white rounded-xl shadow-lg border px-3 py-2">
-                <div className="text-xs font-semibold">Téléchargé</div>
-                <div className="text-xs text-muted-foreground">PDF professionnel</div>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 mt-7">
+                {["Aperçu temps réel", "8 templates premium", "Export PDF", "Personnalisation"].map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                    {f}
+                  </div>
+                ))}
               </div>
             </div>
+
+            <div className="lg:hidden w-full flex justify-center">
+              <img
+                src={HERO_IMAGE}
+                alt="Professionnelles utilisant CVPro"
+                className="w-full max-w-md object-contain object-center"
+                loading="eager"
+              />
+            </div>
+
+            <div className="hidden lg:block min-h-[480px]" aria-hidden="true" />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="border-t">
-        <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Tout ce dont vous avez besoin</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Une plateforme complète pour créer le CV qui fera la différence.</p>
+      <section className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20 lg:py-24">
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
+              Tout ce dont vous avez besoin
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Une plateforme complète pour créer le CV qui fera la différence.
+            </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-x-10 sm:gap-y-10 lg:gap-8 max-w-5xl lg:max-w-none mx-auto">
             {FEATURES.map((f) => (
-              <div key={f.title} className="p-6 rounded-xl border bg-card hover:shadow-md transition-shadow">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <f.icon className="w-5 h-5 text-primary" />
+              <article
+                key={f.title}
+                className="flex flex-col border-b border-border/60 pb-8 last:border-b-0 sm:border-b-0 sm:pb-0"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/8 flex items-center justify-center mb-4 shrink-0">
+                  <f.icon className="w-5 h-5 text-primary" strokeWidth={1.75} />
                 </div>
-                <h3 className="font-semibold mb-2">{f.title}</h3>
+                <h3 className="text-base font-semibold mb-2 leading-snug">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Templates preview */}
-      <section className="bg-muted/30 border-t border-b">
-        <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Templates conçus pour impressionner</h2>
-            <p className="text-muted-foreground">Chaque template est optimisé pour les recruteurs et les ATS modernes.</p>
+      {/* Templates — 4 aperçus */}
+      <section className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+          <div className="mb-10 sm:mb-12 text-center sm:text-left">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Templates conçus pour impressionner</h2>
+            <p className="text-muted-foreground">Optimisés pour les recruteurs et les ATS modernes.</p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {TEMPLATES_PREVIEW.map((t) => (
-              <Link key={t.id} href="/templates" className="group block">
-                <div className="relative rounded-xl overflow-hidden border shadow-sm group-hover:shadow-lg transition-all group-hover:-translate-y-1 bg-white" style={{ height: "220px" }}>
-                  <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: t.color + "15" }}>
-                    <div className="w-full h-full" style={{ transform: "scale(0.38)", transformOrigin: "center center", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: "210mm", minHeight: "297mm", backgroundColor: "white" }}>
-                        <CvPreview cv={{ ...SAMPLE_CV, customization: { ...SAMPLE_CV.customization, templateId: t.id, primaryColor: t.color } }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-                    <div>
-                      <p className="text-white font-semibold text-sm">{t.name}</p>
-                      <p className="text-white/70 text-xs">{t.desc}</p>
-                    </div>
-                  </div>
-                </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl lg:max-w-none mx-auto">
+            {PREVIEW_TEMPLATES.map((t) => (
+              <Link key={t.id} href="/templates" className="block">
+                <TemplatePreviewCard templateId={t.id} color={t.color} name={t.name} />
               </Link>
             ))}
+          </div>
+
+          <div className="mt-10 flex flex-col items-center">
+            <Link
+              href="/templates"
+              className="inline-flex flex-col items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors group"
+            >
+              <span>Découvrir le reste</span>
+              <ChevronDown className="w-4 h-4 animate-bounce text-primary/70 group-hover:text-primary" />
+            </Link>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold tracking-tight mb-4">
-          Prêt à créer votre CV ?
-        </h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">Rejoignez des milliers de professionnels qui ont déjà utilisé CVPro pour décrocher leur poste.</p>
-        <Link href="/builder">
-          <Button size="lg" className="gap-2" data-testid="button-start-cta">
-            Créer mon CV gratuitement
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">C</span>
-            </div>
-            <span className="font-bold text-sm">CVPro</span>
-          </div>
-          <p className="text-sm text-muted-foreground">CVPro — Créateur de CV professionnel</p>
+      <section className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">Prêt à créer votre CV ?</h2>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            Rejoignez des milliers de professionnels qui ont déjà utilisé CVPro pour décrocher leur poste.
+          </p>
+          <Link href="/builder">
+            <Button size="lg" className="gap-2" data-testid="button-start-cta">
+              Créer mon CV gratuitement
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
-      </footer>
+      </section>
     </div>
   );
 }

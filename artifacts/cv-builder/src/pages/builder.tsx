@@ -13,13 +13,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import CvPreview from "@/components/cv-preview";
+import CvPreviewScaled from "@/components/cv-preview-scaled";
+import Logo from "@/components/logo";
+import { CV_TEMPLATES } from "@/data/templates";
 import {
   useCreateCv,
   useUpdateCv,
+  useGetCv,
 } from "@workspace/api-client-react";
-import { CvData, defaultCvData, Experience, Education, Skill, Language, Certification, Project, Interest } from "@/types/cv";
+import { CvData, defaultCvData, cvFromApi, Experience, Education, Skill, Language, Certification, Project, Interest } from "@/types/cv";
 import { useToast } from "@/hooks/use-toast";
+import { clearCvSession, isNotFoundError } from "@/lib/cv-session";
+import { shouldShowBuilderGuide } from "@/lib/builder-guide";
+import { getCvMissingRequiredFields, isCvReadyForDownload } from "@/lib/cv-validation";
+import CvAssistant from "@/components/cv-assistant";
+import SectionHeader from "@/components/section-header";
 
 function nanoid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -39,7 +47,7 @@ const SECTIONS = [
 ];
 
 const FONT_OPTIONS = ["Inter", "Georgia", "Times New Roman", "Arial", "Helvetica", "Roboto"];
-const COLORS = ["#4F46E5", "#7C3AED", "#059669", "#DC2626", "#D97706", "#0891B2", "#1e293b", "#B45309"];
+const COLORS = ["#5D5CFF", "#7C3AED", "#059669", "#DC2626", "#D97706", "#0891B2", "#1e293b", "#B45309"];
 const LEVEL_LABELS: Record<string, string> = {
   beginner: "Débutant",
   intermediate: "Intermédiaire",
@@ -66,36 +74,83 @@ export default function Builder() {
     };
   });
   const [activeSection, setActiveSection] = useState("personal");
+  const [assistantInitiallyExpanded] = useState(shouldShowBuilderGuide);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewForDownload, setPreviewForDownload] = useState(false);
   const [cvId, setCvId] = useState<string | null>(() => localStorage.getItem("cv_id"));
   const [saving, setSaving] = useState(false);
+  const [loadingCv, setLoadingCv] = useState(() => !!localStorage.getItem("cv_id"));
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHydratedRef = useRef(false);
 
   const createCv = useCreateCv();
   const updateCv = useUpdateCv();
+  const { data: serverCv, isLoading: fetchingCv, isError, error: cvFetchError } = useGetCv(cvId ?? "", {
+    query: { enabled: !!cvId, retry: false },
+  });
 
-  // Initialize CV on first load
+  // CV introuvable en base (ex. redémarrage API avec DATABASE_URL=memory://)
   useEffect(() => {
-    if (!cvId) {
-      createCv.mutate(
-        { data: { personalInfo: cv.personalInfo, customization: cv.customization } },
-        {
-          onSuccess: (data: any) => {
-            const id = data.id;
-            setCvId(id);
-            localStorage.setItem("cv_id", id);
-          },
-          onError: () => {
-            toast({ title: "Erreur", description: "Impossible de créer le CV.", variant: "destructive" });
-          },
-        }
-      );
+    if (!cvId || fetchingCv || !isError || !isNotFoundError(cvFetchError)) return;
+
+    clearCvSession();
+    setCvId(null);
+    isHydratedRef.current = false;
+    setLoadingCv(false);
+    toast({
+      title: "Session expirée",
+      description: "Votre CV n'est plus sur le serveur. Un nouveau brouillon va être créé.",
+    });
+  }, [cvId, fetchingCv, isError, cvFetchError, toast]);
+
+  // Restaurer le CV depuis l'API après rafraîchissement
+  useEffect(() => {
+    if (!cvId || fetchingCv) return;
+
+    if (serverCv && !isHydratedRef.current) {
+      const restored = cvFromApi(serverCv as Record<string, unknown>, localStorage.getItem("cv_photo"));
+      setCv(restored);
+      if (restored.personalInfo.photoUrl) {
+        localStorage.setItem("cv_photo", restored.personalInfo.photoUrl);
+      }
+      isHydratedRef.current = true;
+      setLoadingCv(false);
+      return;
     }
-  }, []);
+
+    if (!serverCv) {
+      isHydratedRef.current = true;
+      setLoadingCv(false);
+    }
+  }, [cvId, serverCv, fetchingCv]);
+
+  // Créer un CV uniquement s'il n'existe pas encore
+  useEffect(() => {
+    if (cvId) return;
+
+    createCv.mutate(
+      { data: { personalInfo: cv.personalInfo, customization: cv.customization } },
+      {
+        onSuccess: (data: any) => {
+          const id = data.id;
+          setCvId(id);
+          localStorage.setItem("cv_id", id);
+          isHydratedRef.current = true;
+          setLoadingCv(false);
+        },
+        onError: () => {
+          toast({ title: "Erreur", description: "Impossible de créer le CV.", variant: "destructive" });
+          setLoadingCv(false);
+        },
+      },
+    );
+  }, [cvId]);
 
   // Debounced auto-save
   const scheduleAutoSave = useCallback((newCv: CvData) => {
+    if (!isHydratedRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       const id = cvId || localStorage.getItem("cv_id");
@@ -153,29 +208,62 @@ export default function Builder() {
     reader.readAsDataURL(file);
   };
 
-  const handleDownload = () => {
-    const isPaid = localStorage.getItem("cv_paid") === "true";
-    if (isPaid) {
-      setLocation("/download");
-    } else {
-      setLocation("/payment");
+  const handleOpenPreviewForDownload = () => {
+    const missing = getCvMissingRequiredFields(cv);
+    if (missing.length > 0) {
+      toast({
+        title: "Informations obligatoires manquantes",
+        description: `Complétez : ${missing.map((f) => f.label).join(", ")}`,
+        variant: "destructive",
+      });
+      setActiveSection(missing[0].sectionId);
+      return;
     }
+    setPreviewForDownload(true);
+    setPreviewOpen(true);
   };
 
+  const handleContinueToDownload = () => {
+    setPreviewOpen(false);
+    setPreviewForDownload(false);
+    setLocation("/download");
+  };
+
+  const handleOpenEditorPreview = () => {
+    setPreviewForDownload(false);
+    setPreviewOpen(true);
+  };
+
+  const canDownload = isCvReadyForDownload(cv);
+
+  /** Aperçu éditeur toujours protégé — version nette uniquement sur /download après paiement */
+  const previewWatermarked = !loadingCv;
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPreviewOpen(false);
+        setPreviewForDownload(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [previewOpen]);
+
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Top bar */}
-      <header className="border-b bg-card shrink-0 h-14 flex items-center px-4 gap-4 z-20">
+      <header className="border-b bg-white shrink-0 h-20 flex items-center px-4 gap-4 z-20">
         <Link href="/" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Accueil</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xs">C</span>
-          </div>
-          <span className="font-bold">CVPro</span>
-        </div>
+        <Logo height={56} />
         <div className="flex-1" />
         {saving && <span className="text-xs text-muted-foreground">Enregistrement...</span>}
         <Link href="/templates">
@@ -184,7 +272,29 @@ export default function Builder() {
             Templates
           </Button>
         </Link>
-        <Button size="sm" className="gap-2" onClick={handleDownload} data-testid="button-download">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 lg:hidden shrink-0"
+          onClick={handleOpenEditorPreview}
+          disabled={loadingCv}
+          data-testid="button-mobile-preview"
+        >
+          <Eye className="w-4 h-4" />
+          Aperçu
+        </Button>
+        <Button
+          size="sm"
+          className="gap-2 shrink-0"
+          onClick={handleOpenPreviewForDownload}
+          disabled={loadingCv || !canDownload}
+          data-testid="button-download"
+          title={
+            !canDownload
+              ? "Remplissez prénom, nom, profession, téléphone, adresse et résumé pour télécharger"
+              : undefined
+          }
+        >
           <Download className="w-4 h-4" />
           Télécharger
         </Button>
@@ -214,8 +324,21 @@ export default function Builder() {
             </div>
           </div>
 
+          {!canDownload && !loadingCv && (
+            <p className="text-xs text-amber-800 bg-amber-50 border-b border-amber-100 px-4 py-2 shrink-0">
+              Pour télécharger : prénom, nom, profession, téléphone, adresse et un bref résumé sont requis.
+            </p>
+          )}
+
           {/* Form content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
+            {loadingCv ? (
+              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3" />
+                Chargement de votre CV...
+              </div>
+            ) : (
+              <>
             {activeSection === "personal" && (
               <PersonalSection cv={cv} onChange={updatePersonalInfo} onPhotoUpload={handlePhotoUpload} />
             )}
@@ -246,34 +369,122 @@ export default function Builder() {
             {activeSection === "customize" && (
               <CustomizeSection cv={cv} onChange={(customization) => updateCvState((p) => ({ ...p, customization }))} />
             )}
+              </>
+            )}
           </div>
         </div>
 
         {/* Right panel — live preview */}
         <div className="hidden lg:flex flex-1 bg-muted/40 items-start justify-center overflow-auto p-6">
-          <div className="relative">
-            <div className="rounded-xl overflow-hidden shadow-2xl bg-white border" style={{ width: "600px" }}>
-              <div style={{ transform: "scale(0.78)", transformOrigin: "top left", width: "769px" }}>
-                <CvPreview cv={cv} />
+          <div className="sticky top-6 w-full flex justify-center">
+            {loadingCv ? (
+              <div
+                className="rounded-xl border bg-white shadow-2xl flex items-center justify-center text-muted-foreground text-sm"
+                style={{ width: 520, height: 420 }}
+              >
+                Chargement de l'aperçu...
               </div>
-            </div>
+            ) : (
+              <CvPreviewScaled
+                cv={cv}
+                maxWidth={520}
+                stylePreviewFilter={activeSection === "customize"}
+                watermarked={previewWatermarked}
+                watermarkMode="editor"
+              />
+            )}
           </div>
         </div>
       </div>
+
+      {previewOpen && (
+        <div
+          className={`fixed inset-0 z-[150] flex flex-col bg-white ${previewForDownload ? "" : "lg:hidden"}`}
+        >
+          <div className="shrink-0 h-14 px-4 border-b flex items-center justify-between bg-white">
+            <p className="text-sm font-semibold">
+              {previewForDownload ? "Aperçu de votre CV" : "Aperçu en temps réel"}
+            </p>
+            {!previewForDownload && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPreviewOpen(false)}
+              >
+                Fermer
+              </Button>
+            )}
+          </div>
+          <div className="flex-1 min-h-0 p-4 bg-slate-50/50">
+            {loadingCv ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                Chargement de l&apos;aperçu…
+              </div>
+            ) : (
+              <CvPreviewScaled
+                cv={cv}
+                fit="contain"
+                maxWidth={720}
+                className="h-full w-full"
+                stylePreviewFilter={activeSection === "customize"}
+                watermarked={previewWatermarked}
+                watermarkMode="editor"
+              />
+            )}
+          </div>
+          <div className="shrink-0 px-4 py-3 border-t bg-white flex gap-2">
+            {previewForDownload ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    setPreviewForDownload(false);
+                  }}
+                >
+                  Retour à l&apos;édition
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={handleContinueToDownload}
+                  data-testid="button-continue-download"
+                >
+                  Continuer vers Télécharger
+                  <Download className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => setPreviewOpen(false)}
+              >
+                Fermer
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!loadingCv && (
+        <CvAssistant
+          cv={cv}
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          onPersonalInfoChange={updatePersonalInfo}
+          onCvUpdate={updateCvState}
+          onGoToPreview={handleOpenPreviewForDownload}
+          initialExpanded={assistantInitiallyExpanded}
+        />
+      )}
     </div>
   );
 }
 
 // ===================== SECTION COMPONENTS =====================
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-4">
-      <h3 className="font-semibold">{title}</h3>
-      {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
-    </div>
-  );
-}
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -293,7 +504,7 @@ function PersonalSection({ cv, onChange, onPhotoUpload }: {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <div>
-      <SectionHeader title="Informations personnelles" />
+      <SectionHeader title="Informations personnelles" sectionId="personal" />
       {/* Photo */}
       <div className="flex items-center gap-4 mb-5 p-3 rounded-lg border bg-muted/20">
         <div className={`w-16 h-16 rounded-full border-2 border-dashed border-muted-foreground/30 overflow-hidden flex items-center justify-center bg-muted/30 ${pi.photoUrl ? "border-solid border-primary/30" : ""}`}>
@@ -332,14 +543,14 @@ function PersonalSection({ cv, onChange, onPhotoUpload }: {
         <Input value={pi.profession} onChange={(e) => onChange("profession", e.target.value)} placeholder="Développeuse Full-Stack" className="mt-3" data-testid="input-profession" />
       </FormField>
       <div className="grid grid-cols-2 gap-3 mt-3">
-        <FormField label="Téléphone">
+        <FormField label="Téléphone *">
           <Input value={pi.phone || ""} onChange={(e) => onChange("phone", e.target.value)} placeholder="+33 6 00 00 00 00" data-testid="input-phone" />
         </FormField>
         <FormField label="Email">
           <Input value={pi.email || ""} onChange={(e) => onChange("email", e.target.value)} placeholder="email@exemple.com" data-testid="input-email" />
         </FormField>
       </div>
-      <FormField label="Adresse">
+      <FormField label="Adresse *">
         <Input value={pi.address || ""} onChange={(e) => onChange("address", e.target.value)} placeholder="Paris, France" className="mt-3" data-testid="input-address" />
       </FormField>
       <FormField label="LinkedIn">
@@ -360,7 +571,11 @@ function PersonalSection({ cv, onChange, onPhotoUpload }: {
 function SummarySection({ cv, onChange }: { cv: CvData; onChange: (val: string) => void }) {
   return (
     <div>
-      <SectionHeader title="Résumé professionnel" subtitle="Présentez-vous en 3-5 phrases percutantes." />
+      <SectionHeader
+        title="Résumé professionnel *"
+        subtitle="Présentez-vous en 3-5 phrases percutantes (obligatoire pour télécharger)."
+        sectionId="summary"
+      />
       <Textarea
         value={cv.personalInfo.summary || ""}
         onChange={(e) => onChange(e.target.value)}
@@ -392,7 +607,7 @@ function ExperienceSection({ cv, onChange }: { cv: CvData; onChange: (items: Exp
 
   return (
     <div>
-      <SectionHeader title="Expériences professionnelles" />
+      <SectionHeader title="Expériences professionnelles" sectionId="experience" />
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.id} className="border rounded-lg overflow-hidden">
@@ -473,7 +688,7 @@ function EducationSection({ cv, onChange }: { cv: CvData; onChange: (items: Educ
 
   return (
     <div>
-      <SectionHeader title="Formation" />
+      <SectionHeader title="Formation" sectionId="education" />
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.id} className="border rounded-lg overflow-hidden">
@@ -533,7 +748,7 @@ function SkillsSection({ cv, onChange }: { cv: CvData; onChange: (items: Skill[]
 
   return (
     <div>
-      <SectionHeader title="Compétences" subtitle="Ajoutez vos compétences avec un niveau de maîtrise." />
+      <SectionHeader title="Compétences" subtitle="Ajoutez vos compétences avec un niveau de maîtrise." sectionId="skills" />
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item.id} className="p-3 border rounded-lg space-y-2 bg-muted/10">
@@ -598,7 +813,7 @@ function LanguagesSection({ cv, onChange }: { cv: CvData; onChange: (items: Lang
 
   return (
     <div>
-      <SectionHeader title="Langues" />
+      <SectionHeader title="Langues" sectionId="languages" />
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-2">
@@ -648,7 +863,7 @@ function CertificationsSection({ cv, onChange }: { cv: CvData; onChange: (items:
 
   return (
     <div>
-      <SectionHeader title="Certifications" />
+      <SectionHeader title="Certifications" sectionId="certifications" />
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item.id} className="p-3 border rounded-lg space-y-2 bg-muted/10">
@@ -693,7 +908,7 @@ function ProjectsSection({ cv, onChange }: { cv: CvData; onChange: (items: Proje
 
   return (
     <div>
-      <SectionHeader title="Projets" />
+      <SectionHeader title="Projets" sectionId="projects" />
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.id} className="border rounded-lg overflow-hidden">
@@ -747,7 +962,7 @@ function InterestsSection({ cv, onChange }: { cv: CvData; onChange: (items: Inte
 
   return (
     <div>
-      <SectionHeader title="Centres d'intérêt" />
+      <SectionHeader title="Centres d'intérêt" sectionId="interests" />
       <div className="flex flex-wrap gap-2 mb-3 min-h-12 p-2 rounded-lg border bg-muted/10">
         {items.length === 0 && <p className="text-xs text-muted-foreground self-center">Aucun intérêt ajouté</p>}
         {items.map((item) => (
@@ -781,25 +996,20 @@ function CustomizeSection({ cv, onChange }: { cv: CvData; onChange: (c: typeof c
 
   return (
     <div>
-      <SectionHeader title="Personnalisation" subtitle="Ajustez l'apparence de votre CV." />
+      <SectionHeader title="Personnalisation" subtitle="Ajustez l'apparence de votre CV." sectionId="customize" />
 
       {/* Template */}
       <div className="mb-5">
         <Label className="text-xs text-muted-foreground mb-2 block">Template</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { id: "modern", name: "Modern", color: "#4F46E5" },
-            { id: "creative", name: "Créatif", color: "#7C3AED" },
-            { id: "classic", name: "Classique", color: "#1e293b" },
-            { id: "executive", name: "Exécutif", color: "#B45309" },
-          ].map((t) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {CV_TEMPLATES.map((t) => (
             <button
               key={t.id}
               onClick={() => onChange({ ...c, templateId: t.id, primaryColor: t.color })}
               className={`p-2.5 rounded-lg border-2 text-left text-sm font-medium transition-all ${c.templateId === t.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
               data-testid={`button-template-${t.id}`}
             >
-              <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: t.color }} />
+              <div className="w-full h-1.5 rounded-full mb-1.5" style={{ backgroundColor: t.color }} />
               {t.name}
             </button>
           ))}
@@ -866,7 +1076,7 @@ function CustomizeSection({ cv, onChange }: { cv: CvData; onChange: (c: typeof c
       </div>
 
       {/* Photo style */}
-      <div>
+      <div className="mb-5">
         <Label className="text-xs text-muted-foreground mb-2 block">Style de la photo</Label>
         <div className="flex gap-2">
           {(["circle", "square", "none"] as const).map((style) => (
@@ -880,6 +1090,13 @@ function CustomizeSection({ cv, onChange }: { cv: CvData; onChange: (c: typeof c
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
+        <p className="text-xs font-medium text-foreground">Aperçu protégé CVPro</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+          L&apos;aperçu à droite est flouté avec filigrane CVPro pour éviter toute copie directe. Sur cet onglet, un filtre contrasté s&apos;ajoute pour juger couleurs et typographie. Le PDF net est disponible après paiement.
+        </p>
       </div>
     </div>
   );

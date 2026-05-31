@@ -27,6 +27,8 @@ router.post("/cvs", async (req, res) => {
   const id = randomUUID();
   const sessionToken = randomUUID();
 
+  const now = new Date();
+
   const [cv] = await db
     .insert(cvsTable)
     .values({
@@ -42,6 +44,8 @@ router.post("/cvs", async (req, res) => {
       projects: [],
       interests: [],
       isPaid: false,
+      createdAt: now,
+      updatedAt: now,
     })
     .returning();
 

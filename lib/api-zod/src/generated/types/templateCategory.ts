@@ -14,4 +14,8 @@ export const TemplateCategory = {
   creative: 'creative',
   classic: 'classic',
   executive: 'executive',
+  corporate: 'corporate',
+  consultant: 'consultant',
+  minimal: 'minimal',
+  international: 'international',
 } as const;

@@ -1,5 +1,9 @@
-import app from "./app";
+import { loadEnvFiles, isPaystackConfigured } from "./lib/env";
 import { logger } from "./lib/logger";
+
+loadEnvFiles();
+
+const { default: app } = await import("./app");
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +18,8 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+logger.info({ paystackConfigured: isPaystackConfigured() }, "Environment loaded");
 
 app.listen(port, (err) => {
   if (err) {

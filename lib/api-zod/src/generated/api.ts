@@ -309,7 +309,7 @@ export const ListTemplatesResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "description": zod.string(),
-  "category": zod.enum(['modern', 'creative', 'classic', 'executive']),
+  "category": zod.enum(['modern', 'creative', 'classic', 'executive', 'corporate', 'consultant', 'minimal', 'international']),
   "previewColor": zod.string()
 })
 export const ListTemplatesResponse = zod.array(ListTemplatesResponseItem)
@@ -322,7 +322,7 @@ export const CreatePaymentBody = zod.object({
   "cvId": zod.string(),
   "amount": zod.number(),
   "currency": zod.string(),
-  "method": zod.enum(['card', 'mobile_money', 'wave', 'paypal'])
+  "method": zod.enum(['card', 'mobile_money', 'wave', 'paypal', 'paystack'])
 })
 
 
@@ -363,6 +363,68 @@ export const ConfirmPaymentResponse = zod.object({
 
 
 /**
+ * @summary Initialize a Paystack transaction for a pending payment
+ */
+export const InitializePaystackPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const InitializePaystackPaymentBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const InitializePaystackPaymentResponse = zod.object({
+  "authorizationUrl": zod.string().optional(),
+  "accessCode": zod.string().optional(),
+  "publicKey": zod.string(),
+  "reference": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string()
+})
+
+
+/**
+ * @summary Verify a Paystack transaction and unlock the CV
+ */
+export const VerifyPaystackPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const VerifyPaystackPaymentBody = zod.object({
+  "reference": zod.string().optional()
+})
+
+export const VerifyPaystackPaymentResponse = zod.object({
+  "id": zod.string(),
+  "cvId": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "status": zod.enum(['pending', 'completed', 'failed']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * Allows re-download without storing payment data client-side. Returns 404 if the CV has no completed payment.
+ * @summary Get the latest completed payment for a CV
+ */
+export const GetCvPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCvPaymentResponse = zod.object({
+  "id": zod.string(),
+  "cvId": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "status": zod.enum(['pending', 'completed', 'failed']),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get a signed download token for a paid CV
  */
 export const GetCvDownloadTokenParams = zod.object({
@@ -370,7 +432,7 @@ export const GetCvDownloadTokenParams = zod.object({
 })
 
 export const GetCvDownloadTokenBody = zod.object({
-  "paymentId": zod.string()
+  "paymentId": zod.string().optional().describe('Optional legacy field — access is granted when the CV is marked paid server-side.')
 })
 
 export const GetCvDownloadTokenResponse = zod.object({

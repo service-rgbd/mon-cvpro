@@ -218,6 +218,101 @@ paths:
         "404":
           description: Not found
 
+  /payments/{id}/paystack/initialize:
+    post:
+      operationId: initializePaystackPayment
+      tags: [payments]
+      summary: Initialize a Paystack transaction for a pending payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaystackInitializeInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaystackInitializeResult"
+        "400":
+          description: Bad request
+        "404":
+          description: Not found
+        "502":
+          description: Paystack error
+
+  /payments/{id}/paystack/verify:
+    post:
+      operationId: verifyPaystackPayment
+      tags: [payments]
+      summary: Verify a Paystack transaction and unlock the CV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaystackVerifyInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "402":
+          description: Payment not successful
+        "404":
+          description: Not found
+        "502":
+          description: Paystack error
+
+  /webhooks/paystack:
+    post:
+      operationId: paystackWebhook
+      tags: [payments]
+      summary: Paystack webhook (charge.success)
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid signature
+
+  /cvs/{id}/payment:
+    get:
+      operationId: getCvPayment
+      tags: [payments]
+      summary: Get the latest completed payment for a CV
+      description: Allows re-download without storing payment data client-side. Returns 404 if the CV has no completed payment.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          description: CV or completed payment not found
+
   /cvs/{id}/download-token:
     post:
       operationId: getCvDownloadToken
@@ -553,7 +648,7 @@ components:
           type: string
         category:
           type: string
-          enum: [modern, creative, classic, executive]
+          enum: [modern, creative, classic, executive, corporate, consultant, minimal, international]
         previewColor:
           type: string
       required:
@@ -594,7 +689,7 @@ components:
           type: string
         method:
           type: string
-          enum: [card, mobile_money, wave, paypal]
+          enum: [card, mobile_money, wave, paypal, paystack]
       required:
         - cvId
         - amount
@@ -628,13 +723,50 @@ components:
         - status
         - createdAt
 
+        - createdAt
+
+    PaystackInitializeInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+
+    PaystackInitializeResult:
+      type: object
+      properties:
+        authorizationUrl:
+          type: string
+        accessCode:
+          type: string
+        publicKey:
+          type: string
+        reference:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+      required:
+        - publicKey
+        - reference
+        - amount
+        - currency
+
+    PaystackVerifyInput:
+      type: object
+      properties:
+        reference:
+          type: string
+
     DownloadTokenRequest:
       type: object
       properties:
         paymentId:
           type: string
-      required:
-        - paymentId
+          description: Optional legacy field — access is granted when the CV is marked paid server-side.
 
     DownloadToken:
       type: object
