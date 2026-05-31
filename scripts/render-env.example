@@ -3,7 +3,8 @@
 
 NODE_ENV=production
 APP_URL=https://mon-cvpro.binary-security.com
-DATABASE_URL=<URL Neon — identique à env.local, sslmode=require>
+# OBLIGATOIRE — sans cela l'API crash au démarrage (voir logs Render)
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
 PAYSTACK_SECRET_KEY=<sk_test_ ou sk_live_>
 PAYSTACK_PUBLIC_KEY=<pk_test_ ou pk_live_>
 SESSION_SECRET=<générer une chaîne aléatoire de 32+ caractères>
